@@ -1,0 +1,58 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+
+@import "tailwindcss";
+
+@theme {
+  /* ── Warm gray surface palette ─────────────────────────────────── */
+  --color-bg:           #EEECEA;   /* main background + sidebar */
+  --color-card:         #FFFFFF;   /* card surfaces */
+  --color-divider:      #F2F1EE;   /* in-card row dividers */
+  --color-border:       #E4E2DD;   /* rare outer border */
+
+  /* ── Typography ─────────────────────────────────────────────────── */
+  --color-text-primary:   #1C1C1E;
+  --color-text-secondary: #6B6B6B;
+  --color-text-muted:     #9A9994;
+
+  /* ── Navigation ─────────────────────────────────────────────────── */
+  --color-nav-active:  #E2E0DA;
+  --color-nav-hover:   #E8E6E0;
+
+  /* ── Accent ──────────────────────────────────────────────────────── */
+  --color-accent:       #5B7FD4;
+  --color-accent-light: #EEF2FF;
+
+  /* ── Severity ────────────────────────────────────────────────────── */
+  --color-severity-low:          #4CAF7D;
+  --color-severity-low-bg:       #F0FBF4;
+  --color-severity-medium:       #D4953A;
+  --color-severity-medium-bg:    #FEF9EB;
+  --color-severity-high:         #D4713A;
+  --color-severity-high-bg:      #FEF3EB;
+  --color-severity-critical:     #C94F4F;
+  --color-severity-critical-bg:  #FEF0F0;
+
+  /* ── Fonts ───────────────────────────────────────────────────────── */
+  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', monospace;
+}
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: var(--font-sans);
+  background-color: var(--color-bg);
+  color: var(--color-text-primary);
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+#root {
+  display: flex;
+  min-height: 100vh;
+}
