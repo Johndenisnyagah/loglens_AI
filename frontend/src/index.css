@@ -1,39 +1,41 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @import "tailwindcss";
 
 @theme {
-  /* ── Warm gray surface palette ─────────────────────────────────── */
-  --color-bg:           #EEECEA;   /* main background + sidebar */
-  --color-card:         #FFFFFF;   /* card surfaces */
-  --color-divider:      #F2F1EE;   /* in-card row dividers */
-  --color-border:       #E4E2DD;   /* rare outer border */
+  /* ── Surfaces ────────────────────────────────────────────────────── */
+  --color-bg:        #FAF8F4;   /* ivory/paper page background */
+  --color-card:      #FFFFFF;
+  --color-divider:   #F3F4F6;
+  --color-border:    #E5E7EB;
+
+  /* ── Sidebar ─────────────────────────────────────────────────────── */
+  --color-sidebar:        #111827;
+  --color-sidebar-active: #7C3AED;
+  --color-sidebar-hover:  rgba(255,255,255,0.08);
 
   /* ── Typography ─────────────────────────────────────────────────── */
-  --color-text-primary:   #1C1C1E;
-  --color-text-secondary: #6B6B6B;
-  --color-text-muted:     #9A9994;
+  --color-text-primary:   #111827;
+  --color-text-secondary: #6B7280;
+  --color-text-muted:     #9CA3AF;
 
-  /* ── Navigation ─────────────────────────────────────────────────── */
-  --color-nav-active:  #E2E0DA;
-  --color-nav-hover:   #E8E6E0;
-
-  /* ── Accent ──────────────────────────────────────────────────────── */
-  --color-accent:       #5B7FD4;
-  --color-accent-light: #EEF2FF;
+  /* ── Accent (violet/purple) ──────────────────────────────────────── */
+  --color-accent:       #7C3AED;
+  --color-accent-hover: #6D28D9;
+  --color-accent-light: #EDE9FE;
 
   /* ── Severity ────────────────────────────────────────────────────── */
-  --color-severity-low:          #4CAF7D;
-  --color-severity-low-bg:       #F0FBF4;
-  --color-severity-medium:       #D4953A;
-  --color-severity-medium-bg:    #FEF9EB;
-  --color-severity-high:         #D4713A;
-  --color-severity-high-bg:      #FEF3EB;
-  --color-severity-critical:     #C94F4F;
-  --color-severity-critical-bg:  #FEF0F0;
+  --color-severity-low:         #16A34A;
+  --color-severity-low-bg:      #F0FDF4;
+  --color-severity-medium:      #D97706;
+  --color-severity-medium-bg:   #FFFBEB;
+  --color-severity-high:        #EA580C;
+  --color-severity-high-bg:     #FFF7ED;
+  --color-severity-critical:    #DC2626;
+  --color-severity-critical-bg: #FEF2F2;
 
   /* ── Fonts ───────────────────────────────────────────────────────── */
-  --font-sans: 'Inter', system-ui, sans-serif;
+  --font-sans: 'Urbanist', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
@@ -46,8 +48,8 @@
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background-color: var(--color-bg);
-  color: var(--color-text-primary);
+  background-color: #FAF8F4;
+  color: #111827;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

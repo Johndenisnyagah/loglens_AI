@@ -49,13 +49,13 @@ LogLens AI turns raw auth logs into structured security incidents with severity 
                         │ HTTP / REST
 ┌───────────────────────▼─────────────────────────────┐
 │  FastAPI Backend                                    │
-│  ┌──────────┐  ┌────────────┐  ┌───────────────┐   │
-│  │  Parser  │→ │ Detection  │→ │  AI Service   │   │
-│  │ (regex)  │  │  (rules)   │  │ (OpenAI/mock) │   │
-│  └──────────┘  └────────────┘  └───────────────┘   │
+│  ┌──────────┐  ┌────────────┐  ┌───────────────┐    │
+│  │  Parser  │→ │ Detection  │→ │  AI Service   │    │
+│  │ (regex)  │  │  (rules)   │  │ (OpenAI/mock) │    │
+│  └──────────┘  └────────────┘  └───────────────┘    │
 │              ↓                                      │
 │         SQLite Database                             │
-│  (log_files · events · incidents · ai_summaries)   │
+│  (log_files · events · incidents · ai_summaries)    │
 └─────────────────────────────────────────────────────┘
 ```
 
@@ -209,6 +209,6 @@ _Add screenshots here after first run._
 
 ---
 
-## Portfolio Description
+## Description
 
 LogLens AI is a self-hostable AI-assisted security log analysis dashboard for small businesses. It analyzes uploaded Linux authentication logs, detects suspicious login behavior such as brute-force attempts and successful logins after repeated failures, ranks incidents by risk, and generates plain-language AI summaries with recommended remediation steps. The project combines deterministic rule-based detection with AI-assisted explanation, while including production-focused concepts such as input validation, audit logging, human review workflows, AI fallback behavior, and structured incident management.

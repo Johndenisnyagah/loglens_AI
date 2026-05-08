@@ -8,13 +8,12 @@ interface Props {
 export function ErrorState({ message = 'Something went wrong.', onRetry }: Props) {
   return (
     <div className="flex flex-col items-center justify-center py-16 gap-3 text-center">
-      <AlertTriangle className="w-8 h-8 text-[#C94F4F]" strokeWidth={1.5} />
-      <p className="text-sm text-[#6B6B6B]">{message}</p>
+      <div className="w-14 h-14 rounded-2xl bg-[#FEF2F2] flex items-center justify-center mb-1">
+        <AlertTriangle className="w-6 h-6 text-[#DC2626]" strokeWidth={1.5} />
+      </div>
+      <p className="text-sm text-[#6B7280]">{message}</p>
       {onRetry && (
-        <button
-          onClick={onRetry}
-          className="text-sm text-[#5B7FD4] hover:underline"
-        >
+        <button onClick={onRetry} className="text-sm text-[#7C3AED] font-medium hover:underline">
           Try again
         </button>
       )}

@@ -1,17 +1,17 @@
 import type { IncidentStatus } from '../../types';
 
 const styles: Record<IncidentStatus, string> = {
-  open: 'bg-[#EEF2FF] text-[#3B4FD4] border-[#C7D2FE]',
-  reviewed: 'bg-[#F0FBF4] text-[#2E7D52] border-[#B6E8C8]',
-  false_positive: 'bg-[#F5F5F3] text-[#737373] border-[#E1E1DC]',
-  resolved: 'bg-[#F5F5F3] text-[#525252] border-[#D4D4D0]',
+  open:           'bg-[#EDE9FE] text-[#7C3AED] ring-1 ring-[#7C3AED]/20',
+  reviewed:       'bg-[#F0FDF4] text-[#16A34A] ring-1 ring-[#16A34A]/20',
+  false_positive: 'bg-[#F3F4F6] text-[#6B7280] ring-1 ring-[#6B7280]/20',
+  resolved:       'bg-[#F3F4F6] text-[#374151] ring-1 ring-[#374151]/20',
 };
 
 const labels: Record<IncidentStatus, string> = {
-  open: 'Open',
-  reviewed: 'Reviewed',
+  open:           'Open',
+  reviewed:       'Reviewed',
   false_positive: 'False Positive',
-  resolved: 'Resolved',
+  resolved:       'Resolved',
 };
 
 interface Props {
@@ -21,9 +21,7 @@ interface Props {
 
 export function StatusBadge({ status, className = '' }: Props) {
   return (
-    <span
-      className={`inline-flex items-center px-2 py-0.5 rounded-md text-xs font-medium border ${styles[status]} ${className}`}
-    >
+    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-lg text-xs font-semibold ${styles[status]} ${className}`}>
       {labels[status]}
     </span>
   );
