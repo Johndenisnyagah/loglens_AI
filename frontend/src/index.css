@@ -3,36 +3,44 @@
 @import "tailwindcss";
 
 @theme {
+  /* ── Palette ─────────────────────────────────────────────────────── */
+  --color-canvas:      #FBFBF8;   /* off-white — page bg, sidebar text */
+  --color-mist:        #DBE3E9;   /* light blue-gray — borders, inner sections */
+  --color-cornflower:  #6AA6DA;   /* medium blue — accent, buttons, links */
+  --color-pear:        #E1E5AC;   /* soft yellow-green — secondary highlights */
+  --color-black:       #000000;   /* sidebar bg, primary text */
+
   /* ── Surfaces ────────────────────────────────────────────────────── */
-  --color-bg:        #FAF8F4;   /* ivory/paper page background */
-  --color-card:      #FFFFFF;
-  --color-divider:   #F3F4F6;
-  --color-border:    #E5E7EB;
+  --color-bg:       #FBFBF8;   /* Canvas */
+  --color-card:     #FFFFFF;
+  --color-section:  #EEF2F5;   /* Mist tint for inner sections */
+  --color-divider:  #DBE3E9;   /* Mist */
+  --color-border:   #DBE3E9;   /* Mist */
 
   /* ── Sidebar ─────────────────────────────────────────────────────── */
-  --color-sidebar:        #111827;
-  --color-sidebar-active: #7C3AED;
-  --color-sidebar-hover:  rgba(255,255,255,0.08);
+  --color-sidebar:        #000000;
+  --color-sidebar-active: #FBFBF8;
+  --color-sidebar-hover:  rgba(251,251,248,0.08);
 
   /* ── Typography ─────────────────────────────────────────────────── */
-  --color-text-primary:   #111827;
-  --color-text-secondary: #6B7280;
-  --color-text-muted:     #9CA3AF;
+  --color-text-primary:   #000000;
+  --color-text-secondary: #3D5166;
+  --color-text-muted:     #7A92A8;
 
-  /* ── Accent (violet/purple) ──────────────────────────────────────── */
-  --color-accent:       #7C3AED;
-  --color-accent-hover: #6D28D9;
-  --color-accent-light: #EDE9FE;
+  /* ── Accent ──────────────────────────────────────────────────────── */
+  --color-accent:       #6AA6DA;   /* Cornflower */
+  --color-accent-hover: #5A96CA;
+  --color-accent-light: #DBE3E9;   /* Mist */
 
   /* ── Severity ────────────────────────────────────────────────────── */
-  --color-severity-low:         #16A34A;
-  --color-severity-low-bg:      #F0FDF4;
-  --color-severity-medium:      #D97706;
-  --color-severity-medium-bg:   #FFFBEB;
-  --color-severity-high:        #EA580C;
-  --color-severity-high-bg:     #FFF7ED;
-  --color-severity-critical:    #DC2626;
-  --color-severity-critical-bg: #FEF2F2;
+  --color-severity-low:         #000000;
+  --color-severity-low-bg:      #E1E5AC;   /* Pear */
+  --color-severity-medium:      #3D5166;
+  --color-severity-medium-bg:   #DBE3E9;   /* Mist */
+  --color-severity-high:        #FBFBF8;
+  --color-severity-high-bg:     #6AA6DA;   /* Cornflower */
+  --color-severity-critical:    #FBFBF8;
+  --color-severity-critical-bg: #000000;   /* Black */
 
   /* ── Fonts ───────────────────────────────────────────────────────── */
   --font-sans: 'Urbanist', system-ui, sans-serif;
@@ -48,8 +56,8 @@
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background-color: #FAF8F4;
-  color: #111827;
+  background-color: #FBFBF8;
+  color: #000000;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }

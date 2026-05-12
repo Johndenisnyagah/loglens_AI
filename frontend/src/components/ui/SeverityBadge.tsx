@@ -1,10 +1,10 @@
 import type { Severity } from '../../types';
 
 const styles: Record<Severity, string> = {
-  low:      'bg-[#F0FDF4] text-[#16A34A] ring-1 ring-[#16A34A]/20',
-  medium:   'bg-[#FFFBEB] text-[#D97706] ring-1 ring-[#D97706]/20',
-  high:     'bg-[#FFF7ED] text-[#EA580C] ring-1 ring-[#EA580C]/20',
-  critical: 'bg-[#FEF2F2] text-[#DC2626] ring-1 ring-[#DC2626]/20',
+  low:      'bg-[#E1E5AC] text-[#000000]',           /* Pear */
+  medium:   'bg-[#DBE3E9] text-[#3D5166]',           /* Mist */
+  high:     'bg-[#6AA6DA] text-[#FBFBF8]',           /* Cornflower */
+  critical: 'bg-[#000000] text-[#FBFBF8]',           /* Black */
 };
 
 interface Props {

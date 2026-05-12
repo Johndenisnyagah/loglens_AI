@@ -1,10 +1,10 @@
 import type { IncidentStatus } from '../../types';
 
 const styles: Record<IncidentStatus, string> = {
-  open:           'bg-[#EDE9FE] text-[#7C3AED] ring-1 ring-[#7C3AED]/20',
-  reviewed:       'bg-[#F0FDF4] text-[#16A34A] ring-1 ring-[#16A34A]/20',
-  false_positive: 'bg-[#F3F4F6] text-[#6B7280] ring-1 ring-[#6B7280]/20',
-  resolved:       'bg-[#F3F4F6] text-[#374151] ring-1 ring-[#374151]/20',
+  open:           'bg-[#6AA6DA] text-[#FBFBF8]',     /* Cornflower */
+  reviewed:       'bg-[#E1E5AC] text-[#000000]',     /* Pear */
+  false_positive: 'bg-[#DBE3E9] text-[#3D5166]',     /* Mist */
+  resolved:       'bg-[#000000] text-[#FBFBF8]',     /* Black */
 };
 
 const labels: Record<IncidentStatus, string> = {

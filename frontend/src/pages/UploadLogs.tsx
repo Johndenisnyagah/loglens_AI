@@ -1,9 +1,11 @@
 import { useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Upload, CheckCircle2, Circle, Loader2, AlertCircle, ArrowRight } from 'lucide-react';
+import {
+  Upload, CheckCircle2, Circle, Loader2,
+  AlertCircle, ArrowRight, FileText, ShieldAlert, Sparkles,
+} from 'lucide-react';
 import { uploadLogFile } from '../api/logs';
 import type { UploadResult } from '../types';
-import { PageHeader } from '../components/layout/PageHeader';
 
 const STEPS = [
   'Validating file',
@@ -15,6 +17,12 @@ const STEPS = [
   'Creating incidents',
   'Generating AI summaries',
   'Analysis complete',
+];
+
+const TIPS = [
+  { icon: FileText,    text: 'Supports Linux SSH auth.log and syslog files' },
+  { icon: ShieldAlert, text: 'Detects brute-force, enumeration, and account compromise patterns' },
+  { icon: Sparkles,    text: 'AI summaries generated for every incident found' },
 ];
 
 type Phase = 'idle' | 'uploading' | 'done' | 'error';
@@ -48,19 +56,15 @@ export function UploadLogs() {
     }
     try {
       const data = await uploadLogFile(file);
-      setCurrentStep(STEPS.length - 1);
-      setResult(data);
-      setPhase('done');
+      setCurrentStep(STEPS.length - 1); setResult(data); setPhase('done');
     } catch (e: unknown) {
-      const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail
-        ?? 'Upload failed. Please check the backend is running.';
+      const msg = (e as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? 'Upload failed.';
       setErrorMsg(msg); setPhase('error'); setCurrentStep(-1);
     }
   }
 
   const handleFiles = useCallback((files: FileList | null) => {
-    const file = files?.[0];
-    if (file) setSelectedFile(file);
+    const f = files?.[0]; if (f) setSelectedFile(f);
   }, []);
 
   const onDrop = useCallback((e: React.DragEvent) => {
@@ -72,64 +76,112 @@ export function UploadLogs() {
   }
 
   return (
-    <div className="max-w-2xl">
-      <PageHeader title="Upload Logs" subtitle="Analyze a Linux authentication log file" />
+    <div className="grid grid-cols-1 lg:grid-cols-3 gap-6 h-full">
 
-      {/* Drop zone */}
-      <div
-        className={`rounded-2xl p-10 text-center transition-all duration-200 cursor-pointer border-2 border-dashed ${
-          dragging
-            ? 'bg-[#EDE9FE] border-[#7C3AED]'
-            : 'bg-[#F7F6F4] border-[#EDECE8] hover:border-[#7C3AED]/40'
-        }`}
-        onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
-        onDragLeave={() => setDragging(false)}
-        onDrop={onDrop}
-        onClick={() => document.getElementById('file-input')?.click()}
-      >
-        <input id="file-input" type="file" accept=".log,.txt" className="hidden"
-          onChange={(e) => handleFiles(e.target.files)} />
-
-        <div className="w-14 h-14 rounded-2xl bg-[#EDE9FE] flex items-center justify-center mx-auto mb-4">
-          <Upload className="w-6 h-6 text-[#7C3AED]" strokeWidth={1.8} />
+      {/* ── Left: upload zone + progress ─────────────────────────── */}
+      <div className="lg:col-span-2 flex flex-col gap-5">
+        <div>
+          <h1 className="text-xl font-bold text-[#000000]">Upload Logs</h1>
+          <p className="text-sm text-[#7A92A8] mt-0.5">Analyze a Linux authentication log file</p>
         </div>
 
-        {selectedFile ? (
-          <>
-            <p className="text-sm font-semibold text-[#111827]">{selectedFile.name}</p>
-            <p className="text-xs text-[#6B7280] mt-1">{(selectedFile.size / 1024).toFixed(1)} KB · Click to choose a different file</p>
-          </>
-        ) : (
-          <>
-            <p className="text-sm font-semibold text-[#111827]">Drop a log file here</p>
-            <p className="text-xs text-[#6B7280] mt-1">or click to browse · .log or .txt · max 10 MB</p>
-          </>
+        {/* Drop zone */}
+        <div
+          className={`flex-1 flex flex-col items-center justify-center rounded-2xl border-2 border-dashed transition-all duration-200 cursor-pointer min-h-[260px] ${
+            dragging
+              ? 'bg-[#DBE3E9] border-[#6AA6DA]'
+              : 'bg-[#F5F7FA] border-[#EEF2F5] hover:border-[#6AA6DA]/50'
+          }`}
+          onDragOver={(e) => { e.preventDefault(); setDragging(true); }}
+          onDragLeave={() => setDragging(false)}
+          onDrop={onDrop}
+          onClick={() => document.getElementById('file-input')?.click()}
+        >
+          <input id="file-input" type="file" accept=".log,.txt" className="hidden"
+            onChange={(e) => handleFiles(e.target.files)} />
+
+          <div className="w-16 h-16 rounded-2xl bg-[#6AA6DA] flex items-center justify-center mb-4">
+            <Upload className="w-7 h-7 text-[#FBFBF8]" strokeWidth={1.8} />
+          </div>
+
+          {selectedFile ? (
+            <div className="text-center">
+              <p className="text-base font-semibold text-[#000000]">{selectedFile.name}</p>
+              <p className="text-sm text-[#7A92A8] mt-1">{(selectedFile.size / 1024).toFixed(1)} KB · Click to choose a different file</p>
+            </div>
+          ) : (
+            <div className="text-center">
+              <p className="text-base font-semibold text-[#000000]">Drop a log file here</p>
+              <p className="text-sm text-[#7A92A8] mt-1">or click to browse · .log or .txt · max 10 MB</p>
+            </div>
+          )}
+        </div>
+
+        {/* Analyze button */}
+        {selectedFile && phase === 'idle' && (
+          <div className="flex justify-end">
+            <button onClick={() => runUpload(selectedFile)}
+              className="flex items-center gap-2 px-6 py-3 bg-[#6AA6DA] text-[#FBFBF8] text-sm font-semibold rounded-xl hover:bg-[#5A96CA] transition-colors">
+              Analyze Log File <ArrowRight className="w-4 h-4" strokeWidth={2} />
+            </button>
+          </div>
+        )}
+
+        {/* Error */}
+        {phase === 'error' && (
+          <div className="bg-[#F5F7FA] rounded-2xl p-5 flex items-start gap-3 border border-[#EEF2F5]">
+            <AlertCircle className="w-5 h-5 text-[#000000] shrink-0 mt-0.5" strokeWidth={1.8} />
+            <div>
+              <p className="text-sm font-bold text-[#000000]">Upload failed</p>
+              <p className="text-sm text-[#3D5166] mt-0.5">{errorMsg}</p>
+              <button onClick={reset} className="text-sm text-[#6AA6DA] underline mt-2">Try again</button>
+            </div>
+          </div>
+        )}
+
+        {/* Success */}
+        {phase === 'done' && result && (
+          <div className="bg-[#E1E5AC] rounded-2xl p-6">
+            <p className="text-sm font-bold text-[#000000]">Analysis complete</p>
+            <p className="text-sm text-[#3D5166] mt-1 leading-relaxed">
+              Parsed <strong>{result.parsed_events_count}</strong> events from{' '}
+              <strong>{result.total_lines}</strong> lines and created{' '}
+              <strong>{result.incidents_created}</strong> incident{result.incidents_created !== 1 ? 's' : ''}.
+            </p>
+            <div className="flex gap-3 mt-4">
+              <button onClick={() => navigate('/incidents')}
+                className="flex items-center gap-2 px-4 py-2 bg-[#000000] text-[#FBFBF8] text-sm font-semibold rounded-xl hover:bg-[#111111] transition-colors">
+                View Incidents <ArrowRight className="w-4 h-4" strokeWidth={2} />
+              </button>
+              <button onClick={reset}
+                className="px-4 py-2 bg-white text-[#000000] text-sm font-semibold rounded-xl hover:bg-[#F5F7FA] border border-[#EEF2F5] transition-colors">
+                Upload Another
+              </button>
+            </div>
+          </div>
         )}
       </div>
 
-      {selectedFile && phase === 'idle' && (
-        <div className="mt-4 flex justify-end">
-          <button onClick={() => runUpload(selectedFile)}
-            className="flex items-center gap-2 px-5 py-2.5 bg-[#7C3AED] text-white text-sm font-semibold rounded-xl hover:bg-[#6D28D9] transition-colors">
-            Analyze Log File <ArrowRight className="w-4 h-4" strokeWidth={2} />
-          </button>
-        </div>
-      )}
+      {/* ── Right: progress + tips ────────────────────────────────── */}
+      <div className="flex flex-col gap-5">
 
-      {/* Progress */}
-      {(phase === 'uploading' || phase === 'done') && (
-        <div className="mt-6 bg-[#F7F6F4] border border-[#EDECE8] rounded-2xl p-7">
-          <h2 className="text-sm font-semibold text-[#111827] mb-6">Analysis Progress</h2>
-          <ol className="space-y-3.5">
+        {/* Analysis progress */}
+        <div className="bg-[#F5F7FA] rounded-2xl p-6 flex-1">
+          <h2 className="text-sm font-bold text-[#000000] mb-5">Analysis Progress</h2>
+          <ol className="space-y-3">
             {STEPS.map((step, i) => {
-              const done   = i < currentStep || phase === 'done';
-              const active = i === currentStep && phase === 'uploading';
+              const done   = (phase === 'uploading' && i < currentStep) || phase === 'done';
+              const active = phase === 'uploading' && i === currentStep;
               return (
                 <li key={step} className="flex items-center gap-3">
-                  {done   ? <CheckCircle2 className="w-5 h-5 text-[#7C3AED] shrink-0" strokeWidth={2.5} />
-                  : active ? <Loader2 className="w-5 h-5 text-[#7C3AED] animate-spin shrink-0" strokeWidth={2} />
-                           : <Circle className="w-5 h-5 text-[#EDECE8] shrink-0" strokeWidth={1.5} />}
-                  <span className={`text-sm ${done ? 'text-[#7C3AED] font-semibold' : active ? 'text-[#111827] font-semibold' : 'text-[#C4B8A8]'}`}>
+                  {done   ? <CheckCircle2 className="w-4 h-4 text-[#6AA6DA] shrink-0" strokeWidth={2.5} />
+                  : active ? <Loader2 className="w-4 h-4 text-[#6AA6DA] animate-spin shrink-0" strokeWidth={2} />
+                           : <Circle className="w-4 h-4 text-[#EEF2F5] shrink-0" strokeWidth={1.5} />}
+                  <span className={`text-sm ${
+                    done   ? 'text-[#6AA6DA] font-semibold' :
+                    active ? 'text-[#000000] font-semibold' :
+                             'text-[#7A92A8]'
+                  }`}>
                     {step}
                   </span>
                 </li>
@@ -137,41 +189,23 @@ export function UploadLogs() {
             })}
           </ol>
         </div>
-      )}
 
-      {/* Error */}
-      {phase === 'error' && (
-        <div className="mt-6 bg-[#FEF2F2] border border-[#FECACA]/50 rounded-2xl p-5 flex items-start gap-3">
-          <AlertCircle className="w-5 h-5 text-[#DC2626] shrink-0 mt-0.5" strokeWidth={1.8} />
-          <div>
-            <p className="text-sm font-semibold text-[#991B1B]">Upload failed</p>
-            <p className="text-sm text-[#DC2626] mt-0.5">{errorMsg}</p>
-            <button onClick={reset} className="text-sm text-[#991B1B] underline mt-2">Try again</button>
+        {/* Tips card */}
+        <div className="bg-[#000000] rounded-2xl p-6">
+          <p className="text-xs font-bold text-[#FBFBF8]/50 uppercase tracking-widest mb-4">What we detect</p>
+          <div className="space-y-3">
+            {TIPS.map(({ icon: Icon, text }) => (
+              <div key={text} className="flex items-start gap-3">
+                <div className="w-6 h-6 rounded-lg bg-[#6AA6DA] flex items-center justify-center shrink-0 mt-0.5">
+                  <Icon className="w-3 h-3 text-[#FBFBF8]" strokeWidth={2} />
+                </div>
+                <p className="text-xs text-[#FBFBF8]/70 leading-relaxed">{text}</p>
+              </div>
+            ))}
           </div>
         </div>
-      )}
 
-      {/* Success */}
-      {phase === 'done' && result && (
-        <div className="mt-6 bg-[#EDE9FE] border border-[#DDD6FE]/50 rounded-2xl p-6">
-          <p className="text-sm font-bold text-[#5B21B6]">Analysis complete</p>
-          <p className="text-sm text-[#7C3AED] mt-1 leading-relaxed">
-            Parsed <strong>{result.parsed_events_count}</strong> events from{' '}
-            <strong>{result.total_lines}</strong> lines and created{' '}
-            <strong>{result.incidents_created}</strong> incident{result.incidents_created !== 1 ? 's' : ''}.
-          </p>
-          <div className="flex gap-3 mt-5">
-            <button onClick={() => navigate('/incidents')}
-              className="flex items-center gap-2 px-4 py-2 bg-[#7C3AED] text-white text-sm font-semibold rounded-xl hover:bg-[#6D28D9] transition-colors">
-              View Incidents <ArrowRight className="w-4 h-4" strokeWidth={2} />
-            </button>
-            <button onClick={reset}
-              className="px-4 py-2 bg-white text-[#7C3AED] text-sm font-semibold rounded-xl hover:bg-[#F5F3FF] transition-colors border border-[#DDD6FE]/50">
-              Upload Another
-            </button>
-          </div>
-        </div>
-      )}
+      </div>
     </div>
   );
 }

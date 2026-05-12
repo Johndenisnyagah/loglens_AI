@@ -9,16 +9,16 @@ interface Props {
 
 export function SummaryCard({ label, value, icon, accent }: Props) {
   return (
-    <div className="bg-[#F7F6F4] border border-[#EDECE8] rounded-2xl p-6">
-      <div className="flex items-center justify-between mb-4">
-        <p className="text-sm font-medium text-[#6B7280]">{label}</p>
+    <div className={`rounded-2xl p-5 ${accent ? 'bg-[#6AA6DA]' : 'bg-[#F5F7FA]'}`}>
+      <div className="flex items-center justify-between mb-3">
+        <p className={`text-xs font-semibold ${accent ? 'text-[#FBFBF8]/80' : 'text-[#7A92A8]'}`}>{label}</p>
         {icon && (
-          <div className={`p-2.5 rounded-xl ${accent ? 'bg-[#EDE9FE] text-[#7C3AED]' : 'bg-white text-[#9CA3AF] shadow-sm'}`}>
+          <div className={`p-2 rounded-xl ${accent ? 'bg-[#FBFBF8]/20 text-[#FBFBF8]' : 'bg-white text-[#7A92A8]'}`}>
             {icon}
           </div>
         )}
       </div>
-      <p className="text-3xl font-bold tracking-tight text-[#111827]">{value}</p>
+      <p className={`text-3xl font-bold tracking-tight ${accent ? 'text-[#FBFBF8]' : 'text-[#000000]'}`}>{value}</p>
     </div>
   );
 }

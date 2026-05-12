@@ -1,29 +1,47 @@
-import { Search, Bell } from 'lucide-react';
+import { Search, Bell, MoreHorizontal } from 'lucide-react';
+import logoSrc from '../../assets/LOGO.png';
 
 export function Topbar() {
   return (
-    <header className="h-16 border-b border-[#F3F4F6] flex items-center px-7 gap-5 shrink-0">
-      {/* Search */}
-      <div className="relative w-72">
-        <Search className="absolute left-3.5 top-1/2 -translate-y-1/2 w-4 h-4 text-[#9CA3AF]" strokeWidth={1.8} />
-        <input
-          type="text"
-          placeholder="Search…"
-          className="w-full pl-10 pr-4 py-2.5 bg-[#F9FAFB] rounded-xl text-sm text-[#111827] placeholder:text-[#9CA3AF] focus:outline-none focus:ring-2 focus:ring-[#7C3AED]/20 focus:bg-white border border-transparent focus:border-[#7C3AED]/20 transition"
-        />
+    <header className="h-14 border-b border-[#EEF2F5] flex items-center px-6 gap-4 shrink-0">
+
+      {/* Logo */}
+      <div className="flex items-center gap-2.5 shrink-0">
+        <img src={logoSrc} alt="LogLens AI" className="w-7 h-7 rounded-lg object-contain" />
+        <span
+          className="font-bold text-[#000000] text-sm tracking-tight"
+          style={{ fontFamily: "'Space Grotesk', sans-serif" }}
+        >
+          LogLens <span className="text-[#6AA6DA]">AI</span>
+        </span>
       </div>
 
-      {/* Right side */}
-      <div className="flex items-center gap-3 ml-auto">
-        <button className="relative w-10 h-10 rounded-xl bg-[#F9FAFB] flex items-center justify-center text-[#6B7280] hover:bg-[#F3F4F6] transition-colors">
-          <Bell className="w-4 h-4" strokeWidth={1.8} />
-          <span className="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-[#7C3AED]" />
-        </button>
+      {/* Search — center */}
+      <div className="flex-1 flex justify-center">
+        <div className="relative w-full max-w-md">
+          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-3.5 h-3.5 text-[#7A92A8]" strokeWidth={1.8} />
+          <input
+            type="text"
+            placeholder="Search incidents, IPs, rules…"
+            className="w-full pl-9 pr-4 py-2 bg-[#F5F7FA] rounded-xl text-sm text-[#000000] placeholder:text-[#7A92A8] border border-transparent focus:outline-none focus:border-[#DBE3E9] focus:bg-white transition"
+          />
+        </div>
+      </div>
 
-        <div className="w-10 h-10 rounded-xl bg-gradient-to-br from-[#7C3AED] to-[#A855F7] flex items-center justify-center text-white text-xs font-bold shadow-sm select-none cursor-pointer">
+      {/* Actions */}
+      <div className="flex items-center gap-2 shrink-0">
+        <button className="relative w-8 h-8 rounded-xl bg-[#F5F7FA] flex items-center justify-center text-[#3D5166] hover:bg-[#EEF2F5] transition-colors">
+          <Bell className="w-3.5 h-3.5" strokeWidth={1.8} />
+          <span className="absolute top-1.5 right-1.5 w-1.5 h-1.5 rounded-full bg-[#6AA6DA]" />
+        </button>
+        <button className="w-8 h-8 rounded-xl bg-[#F5F7FA] flex items-center justify-center text-[#3D5166] hover:bg-[#EEF2F5] transition-colors">
+          <MoreHorizontal className="w-3.5 h-3.5" strokeWidth={1.8} />
+        </button>
+        <div className="w-8 h-8 rounded-xl bg-[#000000] flex items-center justify-center text-[#FBFBF8] text-[10px] font-bold select-none ml-1">
           LL
         </div>
       </div>
+
     </header>
   );
 }
