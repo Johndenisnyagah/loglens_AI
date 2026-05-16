@@ -73,3 +73,12 @@ export interface UploadResult {
   incidents_created: number;
   status: string;
 }
+
+export interface AuditEntry {
+  id: number;
+  action: string;
+  target_type: string | null;
+  target_id: number | null;
+  details: string | null;
+  created_at: string;
+}

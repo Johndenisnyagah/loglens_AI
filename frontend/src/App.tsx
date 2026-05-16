@@ -4,7 +4,8 @@ import { Dashboard } from './pages/Dashboard';
 import { UploadLogs } from './pages/UploadLogs';
 import { Incidents } from './pages/Incidents';
 import { IncidentDetail } from './pages/IncidentDetail';
-import { Placeholder } from './pages/Placeholder';
+import { AuditLog } from './pages/AuditLog';
+import { Settings } from './pages/Settings';
 
 export default function App() {
   return (
@@ -15,8 +16,9 @@ export default function App() {
           <Route path="upload" element={<UploadLogs />} />
           <Route path="incidents" element={<Incidents />} />
           <Route path="incidents/:id" element={<IncidentDetail />} />
-          <Route path="reports" element={<Placeholder title="Reports" subtitle="Report generation is coming soon." />} />
-          <Route path="settings" element={<Placeholder title="Settings" subtitle="Settings will be available in a future release." />} />
+          <Route path="reports" element={<AuditLog />} />
+          <Route path="audit" element={<AuditLog />} />
+          <Route path="settings" element={<Settings />} />
         </Route>
       </Routes>
     </BrowserRouter>

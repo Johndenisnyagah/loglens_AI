@@ -1,49 +1,42 @@
-@import url('https://fonts.googleapis.com/css2?family=Urbanist:wght@400;500;600;700;800&family=Space+Grotesk:wght@600;700&family=JetBrains+Mono:wght@400;500&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap');
 
 @import "tailwindcss";
 
 @theme {
-  /* ── Palette ─────────────────────────────────────────────────────── */
-  --color-canvas:      #FBFBF8;   /* off-white — page bg, sidebar text */
-  --color-mist:        #DBE3E9;   /* light blue-gray — borders, inner sections */
-  --color-cornflower:  #6AA6DA;   /* medium blue — accent, buttons, links */
-  --color-pear:        #E1E5AC;   /* soft yellow-green — secondary highlights */
-  --color-black:       #000000;   /* sidebar bg, primary text */
+  /* ── LogLens AI palette (dark) ─────────────────────────────────── */
+  --color-bg-app:     #1a1f29;   /* outermost background           */
+  --color-panel:      #232a36;   /* card / panel surfaces          */
+  --color-card:       #2a313e;   /* inset surfaces inside panels   */
+  --color-rail:       #161a23;   /* sidebar / nav rail             */
 
-  /* ── Surfaces ────────────────────────────────────────────────────── */
-  --color-bg:       #FBFBF8;   /* Canvas */
-  --color-card:     #FFFFFF;
-  --color-section:  #EEF2F5;   /* Mist tint for inner sections */
-  --color-divider:  #DBE3E9;   /* Mist */
-  --color-border:   #DBE3E9;   /* Mist */
+  --color-line:       #323a49;   /* primary borders & dividers     */
+  --color-line-soft:  #2a313e;   /* subtle dividers                */
 
-  /* ── Sidebar ─────────────────────────────────────────────────────── */
-  --color-sidebar:        #000000;
-  --color-sidebar-active: #FBFBF8;
-  --color-sidebar-hover:  rgba(251,251,248,0.08);
+  --color-text:       #e6e8ec;   /* primary text                   */
+  --color-text-mid:   #b5bac4;   /* secondary text                 */
+  --color-text-dim:   #6b7283;   /* muted text                     */
+  --color-text-faint: #4a5160;   /* very muted                     */
 
-  /* ── Typography ─────────────────────────────────────────────────── */
-  --color-text-primary:   #000000;
-  --color-text-secondary: #3D5166;
-  --color-text-muted:     #7A92A8;
+  --color-accent:        #4b6cf6;
+  --color-accent-hover:  #5b7bff;
 
-  /* ── Accent ──────────────────────────────────────────────────────── */
-  --color-accent:       #6AA6DA;   /* Cornflower */
-  --color-accent-hover: #5A96CA;
-  --color-accent-light: #DBE3E9;   /* Mist */
+  --color-success:    #5dd39e;
+  --color-warn:       #f9e547;
+  --color-danger:     #ef5b6b;
+  --color-info:       #f08a4b;
 
-  /* ── Severity ────────────────────────────────────────────────────── */
-  --color-severity-low:         #000000;
-  --color-severity-low-bg:      #E1E5AC;   /* Pear */
-  --color-severity-medium:      #3D5166;
-  --color-severity-medium-bg:   #DBE3E9;   /* Mist */
-  --color-severity-high:        #FBFBF8;
-  --color-severity-high-bg:     #6AA6DA;   /* Cornflower */
-  --color-severity-critical:    #FBFBF8;
-  --color-severity-critical-bg: #000000;   /* Black */
+  /* Severity scale (matches existing tokens but recolored) */
+  --color-sev-low:        #b5bac4;
+  --color-sev-low-bg:     rgba(181,186,196,0.10);
+  --color-sev-medium:     #4b6cf6;
+  --color-sev-medium-bg:  rgba(75,108,246,0.12);
+  --color-sev-high:       #f08a4b;
+  --color-sev-high-bg:    rgba(240,138,75,0.14);
+  --color-sev-critical:   #ef5b6b;
+  --color-sev-crit-bg:    rgba(239,91,107,0.14);
 
-  /* ── Fonts ───────────────────────────────────────────────────────── */
-  --font-sans: 'Urbanist', system-ui, sans-serif;
+  /* Fonts */
+  --font-sans: 'Inter', system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', monospace;
 }
 
@@ -56,13 +49,33 @@
 body {
   margin: 0;
   font-family: var(--font-sans);
-  background-color: #FBFBF8;
-  color: #000000;
+  font-feature-settings: "ss01", "cv11";
+  background-color: var(--color-bg-app);
+  color: var(--color-text);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
 #root {
-  display: flex;
   min-height: 100vh;
+  width: 100%;
+}
+
+/* Scrollbar (subtle) */
+*::-webkit-scrollbar { width: 8px; height: 8px; }
+*::-webkit-scrollbar-thumb { background: var(--color-line); }
+*::-webkit-scrollbar-track { background: transparent; }
+
+/* ── Light theme overrides ───────────────────────────────────────── */
+[data-theme="light"] {
+  --color-bg-app:      #f4f5f7;
+  --color-panel:       #ffffff;
+  --color-card:        #eef0f4;
+  --color-rail:        #e2e4ea;
+  --color-line:        #d4d8e4;
+  --color-line-soft:   #e4e7ef;
+  --color-text:        #1a1f2e;
+  --color-text-mid:    #4a5370;
+  --color-text-dim:    #8890a8;
+  --color-text-faint:  #b8bece;
 }

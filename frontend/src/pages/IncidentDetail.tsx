@@ -1,51 +1,98 @@
 import { useEffect, useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { ArrowLeft, AlertTriangle, Sparkles, CheckCircle2, XCircle, Eye, Clock, ShieldAlert, User, Globe } from 'lucide-react';
+import { ArrowLeft, Check, X, RotateCcw, Sparkles } from 'lucide-react';
 import { getIncident, updateIncidentStatus } from '../api/incidents';
 import type { IncidentDetail as IIncidentDetail, IncidentStatus } from '../types';
-import { SeverityBadge } from '../components/ui/SeverityBadge';
-import { StatusBadge } from '../components/ui/StatusBadge';
-import { RawLogBlock } from '../components/ui/RawLogBlock';
 import { LoadingState } from '../components/ui/LoadingState';
 import { ErrorState } from '../components/ui/ErrorState';
+import { PageHead } from '../components/ui/PageHead';
+import { UserChip } from '../components/ui/UserChip';
+import { SeverityBadge } from '../components/ui/SeverityBadge';
+import { StatusBadge } from '../components/ui/StatusBadge';
+import { TrustBanner } from '../components/ui/TrustBanner';
+
+const STYLES = `
+.idd-page { display: flex; flex-direction: column; min-height: 100%; }
+.idd-hd { position: sticky; top: 0; z-index: 10; background: var(--color-bg-app); padding: 24px 48px 20px; border-bottom: 1px solid var(--color-line-soft); display: flex; flex-direction: column; gap: 14px; }
+.idd-bd { padding: 28px 48px 40px; display: flex; flex-direction: column; gap: 22px; }
+.idd-back { display: inline-flex; align-items: center; gap: 8px; color: var(--color-text-dim); font-size: 12px; letter-spacing: 0.08em; text-transform: uppercase; font-weight: 600; cursor: pointer; background: none; border: 0; padding: 0; font-family: inherit; width: fit-content; }
+.idd-back:hover { color: var(--color-text); }
+
+.idd-grid { display: grid; grid-template-columns: 1.5fr 1fr; gap: 28px; align-items: start; }
+
+.idd-panel { background: var(--color-panel); padding: 28px 32px; }
+.idd-panel h2 { font-size: 24px; font-weight: 600; letter-spacing: -0.02em; line-height: 1.2; color: var(--color-text); margin: 6px 0 14px; max-width: 520px; }
+.idd-body  { font-size: 13px; line-height: 1.7; color: var(--color-text-mid); margin: 0; }
+.idd-body code { font-family: var(--font-mono); color: var(--color-text); }
+
+.tags-row { display: flex; gap: 8px; flex-wrap: wrap; margin: 16px 0 22px; align-items: center; }
+.mono-mini { font-family: var(--font-mono); font-size: 11px; color: var(--color-text-mid); }
+
+.kv-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 18px 24px; margin-top: 22px; padding-top: 22px; border-top: 1px solid var(--color-line-soft); }
+.kv-cell .lbl { font-size: 10px; letter-spacing: 0.14em; text-transform: uppercase; color: var(--color-text-dim); font-weight: 500; margin-bottom: 6px; }
+.kv-cell .val { font-size: 13px; color: var(--color-text); font-weight: 500; }
+.kv-cell .val.mono { font-family: var(--font-mono); font-weight: 400; }
+
+.risk-gauge { display: flex; align-items: center; gap: 14px; }
+.risk-gauge svg { width: 56px; height: 56px; }
+.risk-gauge .info { font-size: 11px; color: var(--color-text-dim); }
+.risk-gauge .info strong { display: block; font-size: 14px; font-weight: 600; color: var(--color-text); margin-top: 2px; }
+
+.section-title { display: flex; align-items: center; gap: 10px; margin: 28px 0 14px; }
+.section-title h4 { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-text-dim); font-weight: 600; margin: 0; }
+.section-title .line { flex: 1; height: 1px; background: var(--color-line-soft); }
+
+.evidence-block { background: var(--color-bg-app); border: 1px solid var(--color-line-soft); padding: 14px 16px; font-family: var(--font-mono); font-size: 11px; line-height: 1.65; color: var(--color-text-mid); max-height: 320px; overflow-y: auto; white-space: pre-wrap; }
+
+.side-stack { display: flex; flex-direction: column; gap: 22px; }
+.ai-card-side { background: var(--color-panel); padding: 24px 26px; }
+.ai-head { display: flex; align-items: center; gap: 10px; margin-bottom: 18px; }
+.ai-glyph { width: 28px; height: 28px; background: var(--color-accent); color: white; display: flex; align-items: center; justify-content: center; }
+.ai-card-side h3 { font-size: 12px; letter-spacing: 0.14em; text-transform: uppercase; font-weight: 600; color: var(--color-text); margin: 0; }
+.ai-subhead { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-text-dim); font-weight: 500; margin: 14px 0 6px; }
+.ai-prose { font-size: 12px; line-height: 1.65; color: var(--color-text-mid); margin: 0; }
+
+.actions-list { display: flex; flex-direction: column; gap: 0; margin-top: 6px; }
+.act-item { display: flex; align-items: flex-start; gap: 10px; padding: 10px 0; border-bottom: 1px solid var(--color-line-soft); font-size: 12px; color: var(--color-text-mid); line-height: 1.55; }
+.act-item:last-child { border-bottom: 0; }
+.act-item svg { color: var(--color-accent); margin-top: 2px; flex-shrink: 0; }
+
+.action-bar { background: var(--color-panel); padding: 18px 22px; display: flex; flex-direction: column; gap: 10px; }
+.btn { background: transparent; border: 1px solid var(--color-line); padding: 9px 14px; color: var(--color-text); font-size: 11px; letter-spacing: 0.12em; text-transform: uppercase; font-weight: 600; cursor: pointer; font-family: inherit; display: inline-flex; gap: 8px; align-items: center; justify-content: center; }
+.btn:hover { background: var(--color-card); }
+.btn.primary { background: var(--color-accent); border-color: var(--color-accent); color: white; }
+.btn.primary:hover { background: var(--color-accent-hover); border-color: var(--color-accent-hover); }
+.btn:disabled { opacity: 0.4; cursor: not-allowed; }
+`;
 
 const RULE_LABELS: Record<string, string> = {
-  brute_force_failed_logins: 'Brute-force Failed Logins',
-  sensitive_username_targeted: 'Sensitive Username Targeted',
-  successful_login_after_failures: 'Successful Login After Failures',
-  username_enumeration: 'Username Enumeration',
+  brute_force_failed_logins:       'Brute-force failed logins',
+  sensitive_username_targeted:     'Sensitive username targeted',
+  successful_login_after_failures: 'Successful login after failures',
+  username_enumeration:            'Username enumeration',
 };
+
+const sevToCss = (s: string) =>
+  s === 'critical' ? 'var(--color-danger)'
+: s === 'high'     ? 'var(--color-info)'
+: s === 'medium'   ? 'var(--color-warn)'
+                   : 'var(--color-success)';
+
+function RiskGauge({ score, severity }: { score: number; severity: string }) {
+  const color = sevToCss(severity);
+  return (
+    <div className="risk-gauge">
+      <svg viewBox="0 0 36 36" style={{ transform: 'rotate(-90deg)' }}>
+        <circle cx="18" cy="18" r="15.9" fill="none" stroke="rgba(255,255,255,0.06)" strokeWidth="3" />
+        <circle cx="18" cy="18" r="15.9" fill="none" stroke={color} strokeWidth="3" strokeDasharray={`${score} 100`} strokeLinecap="round" />
+      </svg>
+      <div className="info">Risk score<strong>{score}/100</strong></div>
+    </div>
+  );
+}
 
 function formatDate(iso: string) {
   return new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
-}
-
-function RiskGauge({ score }: { score: number }) {
-  const color = score >= 86 ? '#000000' : score >= 61 ? '#6AA6DA' : score >= 31 ? '#DBE3E9' : '#E1E5AC';
-  return (
-    <div className="flex items-center gap-4">
-      <div className="relative w-14 h-14 shrink-0">
-        <svg viewBox="0 0 36 36" className="w-14 h-14 -rotate-90">
-          <circle cx="18" cy="18" r="15.9" fill="none" stroke="#EEF2F5" strokeWidth="3" />
-          <circle cx="18" cy="18" r="15.9" fill="none" stroke={color} strokeWidth="3" strokeDasharray={`${score} 100`} strokeLinecap="round" />
-        </svg>
-        <span className="absolute inset-0 flex items-center justify-center text-sm font-bold text-[#000000]">{score}</span>
-      </div>
-      <div>
-        <p className="text-xs text-[#7A92A8]">Risk Score</p>
-        <p className="text-sm font-bold text-[#000000]">{score} / 100</p>
-      </div>
-    </div>
-  );
-}
-
-function MetaItem({ icon: Icon, label, value, mono = false }: { icon: React.ElementType; label: string; value: string; mono?: boolean }) {
-  return (
-    <div>
-      <p className="flex items-center gap-1 text-xs text-[#7A92A8] mb-0.5"><Icon className="w-3 h-3" />{label}</p>
-      <p className={`text-sm text-[#000000] ${mono ? 'font-mono' : 'font-semibold'}`}>{value}</p>
-    </div>
-  );
 }
 
 export function IncidentDetail() {
@@ -58,8 +105,11 @@ export function IncidentDetail() {
 
   useEffect(() => {
     if (!id) return;
-    setLoading(true);
-    getIncident(Number(id)).then(setIncident).catch(() => setError('Could not load incident.')).finally(() => setLoading(false));
+    setLoading(true); setError('');
+    getIncident(Number(id))
+      .then(setIncident)
+      .catch(() => setError('Could not load incident.'))
+      .finally(() => setLoading(false));
   }, [id]);
 
   async function setStatus(status: IncidentStatus) {
@@ -67,121 +117,103 @@ export function IncidentDetail() {
     setUpdating(true);
     try {
       const updated = await updateIncidentStatus(incident.id, status);
-      setIncident((prev) => prev ? { ...prev, status: updated.status } : prev);
+      setIncident({ ...incident, status: updated.status });
     } finally { setUpdating(false); }
   }
 
-  if (loading)            return <LoadingState message="Loading incident…" />;
-  if (error || !incident) return <ErrorState message={error || 'Incident not found.'} onRetry={() => navigate('/incidents')} />;
+  if (loading) return <div className="idd-page"><style>{STYLES}</style><LoadingState message="Loading incident…" /></div>;
+  if (error || !incident) return <div className="idd-page"><style>{STYLES}</style><ErrorState message={error || 'Incident not found.'} onRetry={() => navigate('/incidents')} /></div>;
 
   const ai = incident.ai_summary;
 
   return (
-    <div>
-      <button onClick={() => navigate('/incidents')}
-        className="flex items-center gap-1.5 text-sm text-[#7A92A8] hover:text-[#000000] mb-6 transition-colors font-medium">
-        <ArrowLeft className="w-4 h-4" strokeWidth={2} /> All incidents
-      </button>
+    <div className="idd-page">
+      <style>{STYLES}</style>
 
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-5">
-        <div className="lg:col-span-2 space-y-4">
-          {/* Header */}
-          <div className="bg-[#F5F7FA] rounded-2xl p-6">
-            <div className="flex items-start justify-between gap-4 mb-5">
-              <div className="min-w-0">
-                <h1 className="text-xl font-bold text-[#000000] leading-snug">{incident.title}</h1>
-                <p className="text-sm text-[#3D5166] mt-1.5 leading-relaxed">{incident.description}</p>
-              </div>
-              <SeverityBadge severity={incident.severity} className="shrink-0" />
-            </div>
-            <div className="flex flex-wrap gap-8 items-start">
-              <RiskGauge score={incident.risk_score} />
-              <div className="grid grid-cols-2 gap-x-8 gap-y-3 flex-1 min-w-[180px]">
-                <MetaItem icon={Globe} label="Source IP" value={incident.source_ip ?? '—'} mono />
-                <MetaItem icon={User} label="Username" value={incident.username ?? '—'} mono />
-                <MetaItem icon={ShieldAlert} label="Detection Rule" value={RULE_LABELS[incident.detection_rule] ?? incident.detection_rule} />
-                <MetaItem icon={Clock} label="Detected" value={formatDate(incident.created_at)} />
-              </div>
-            </div>
-            <div className="mt-5 pt-4 border-t border-[#EEF2F5] flex flex-wrap items-center gap-2.5">
-              <StatusBadge status={incident.status} />
-              {incident.needs_human_review && (
-                <span className="inline-flex items-center gap-1.5 text-xs text-[#3D5166] bg-[#E1E5AC] px-2.5 py-1 rounded-lg font-medium">
-                  <AlertTriangle className="w-3 h-3" strokeWidth={2} /> Needs human review
-                </span>
-              )}
-            </div>
+      <div className="idd-hd">
+        <button className="idd-back" onClick={() => navigate('/incidents')}>
+          <ArrowLeft size={14} strokeWidth={2.2} /> Back to incidents
+        </button>
+        <PageHead
+          eyebrow={`Incident · INC-${String(incident.id).padStart(3, '0')}`}
+          title="Incident workspace"
+          subtitle="Review evidence, AI guidance, and approve a response action."
+          right={<UserChip />}
+        />
+      </div>
+
+      <div className="idd-bd">
+      <TrustBanner />
+
+      <div className="idd-grid">
+        {/* MAIN */}
+        <div className="idd-panel">
+          <RiskGauge score={incident.risk_score} severity={incident.severity} />
+          <h2>{incident.title}</h2>
+          <div className="tags-row">
+            <SeverityBadge severity={incident.severity} />
+            <StatusBadge status={incident.status} />
+            {incident.needs_human_review && (
+              <span className="mono-mini" style={{ color: 'var(--color-warn)' }}>· needs human review</span>
+            )}
+          </div>
+          <p className="idd-body">{incident.description}</p>
+
+          <div className="kv-grid">
+            <div className="kv-cell"><div className="lbl">Source IP</div><div className="val mono">{incident.source_ip ?? '—'}</div></div>
+            <div className="kv-cell"><div className="lbl">Username</div><div className="val mono">{incident.username ?? '—'}</div></div>
+            <div className="kv-cell"><div className="lbl">Detection rule</div><div className="val">{RULE_LABELS[incident.detection_rule] ?? incident.detection_rule}</div></div>
+            <div className="kv-cell"><div className="lbl">Detected</div><div className="val">{formatDate(incident.created_at)}</div></div>
           </div>
 
-          {/* Evidence */}
           {incident.evidence.length > 0 && (
-            <div className="bg-[#F5F7FA] rounded-2xl p-6">
-              <h2 className="text-sm font-bold text-[#000000] mb-4">Evidence Log Lines</h2>
-              <RawLogBlock lines={incident.evidence.map((e) => e.raw_message)} />
-            </div>
+            <>
+              <div className="section-title"><h4>Evidence ({incident.evidence.length} lines)</h4><div className="line" /></div>
+              <div className="evidence-block">{incident.evidence.map((e) => e.raw_message).join('\n')}</div>
+            </>
           )}
         </div>
 
-        {/* Right panel */}
-        <div className="space-y-4">
-          {/* AI Summary */}
-          <div className="bg-[#F5F7FA] rounded-2xl p-5">
-            <div className="flex items-center gap-2 mb-4">
-              <div className="w-6 h-6 rounded-lg bg-[#6AA6DA] flex items-center justify-center">
-                <Sparkles className="w-3 h-3 text-[#FBFBF8]" strokeWidth={2} />
-              </div>
-              <h2 className="text-sm font-bold text-[#000000]">AI Summary</h2>
+        {/* SIDE */}
+        <div className="side-stack">
+          <div className="ai-card-side">
+            <div className="ai-head">
+              <div className="ai-glyph"><Sparkles size={14} strokeWidth={2} /></div>
+              <h3>AI summary</h3>
             </div>
             {ai ? (
-              <div className="space-y-4">
-                <div>
-                  <p className="text-[10px] font-bold text-[#7A92A8] uppercase tracking-widest mb-1.5">Summary</p>
-                  <p className="text-xs text-[#3D5166] leading-relaxed">{ai.summary}</p>
+              <>
+                <div className="ai-subhead">Summary</div>
+                <p className="ai-prose">{ai.summary}</p>
+                <div className="ai-subhead">Why it matters</div>
+                <p className="ai-prose">{ai.why_it_matters}</p>
+                <div className="ai-subhead">Recommended actions</div>
+                <div className="actions-list">
+                  {ai.recommended_actions.map((a, i) => (
+                    <div key={i} className="act-item"><Check size={12} strokeWidth={2.5} />{a}</div>
+                  ))}
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold text-[#7A92A8] uppercase tracking-widest mb-1.5">Why it matters</p>
-                  <p className="text-xs text-[#3D5166] leading-relaxed">{ai.why_it_matters}</p>
+                <div style={{ display: 'flex', justifyContent: 'space-between', marginTop: 18, paddingTop: 14, borderTop: '1px solid var(--color-line-soft)', fontSize: 11, color: 'var(--color-text-dim)' }}>
+                  <span>Confidence: <strong style={{ color: 'var(--color-text)', textTransform: 'capitalize' }}>{ai.confidence}</strong></span>
+                  {ai.model_used && <span style={{ fontFamily: 'var(--font-mono)' }}>{ai.model_used}</span>}
                 </div>
-                <div>
-                  <p className="text-[10px] font-bold text-[#7A92A8] uppercase tracking-widest mb-2">Actions</p>
-                  <ul className="space-y-1.5">
-                    {ai.recommended_actions.map((a, i) => (
-                      <li key={i} className="flex items-start gap-2 text-xs text-[#3D5166]">
-                        <CheckCircle2 className="w-3.5 h-3.5 text-[#6AA6DA] shrink-0 mt-0.5" strokeWidth={2.5} />{a}
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-                <div className="pt-3 border-t border-[#EEF2F5] flex items-center justify-between">
-                  <div>
-                    <p className="text-[10px] text-[#7A92A8] uppercase tracking-widest">Confidence</p>
-                    <p className="text-xs font-bold capitalize mt-0.5 text-[#000000]">{ai.confidence}</p>
-                  </div>
-                  {ai.model_used && <span className="text-[10px] text-[#7A92A8] bg-white px-2 py-1 rounded-lg border border-[#EEF2F5]">{ai.model_used}</span>}
-                </div>
-              </div>
-            ) : <p className="text-xs text-[#7A92A8]">AI summary not available.</p>}
+              </>
+            ) : <p className="ai-prose">AI summary not available for this incident yet.</p>}
           </div>
 
-          {/* Status actions */}
-          <div className="bg-[#F5F7FA] rounded-2xl p-5">
-            <h2 className="text-sm font-bold text-[#000000] mb-3">Update Status</h2>
-            <div className="space-y-2">
-              <button onClick={() => setStatus('reviewed')} disabled={updating || incident.status === 'reviewed'}
-                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium rounded-xl bg-white border border-[#EEF2F5] text-[#000000] hover:border-[#6AA6DA] hover:text-[#6AA6DA] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                <Eye className="w-4 h-4" strokeWidth={1.8} /> Mark Reviewed
-              </button>
-              <button onClick={() => setStatus('false_positive')} disabled={updating || incident.status === 'false_positive'}
-                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium rounded-xl bg-white border border-[#EEF2F5] text-[#000000] hover:bg-[#F5F7FA] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                <XCircle className="w-4 h-4 text-[#7A92A8]" strokeWidth={1.8} /> Mark False Positive
-              </button>
-              <button onClick={() => setStatus('resolved')} disabled={updating || incident.status === 'resolved'}
-                className="w-full flex items-center gap-2.5 px-4 py-2.5 text-sm font-medium rounded-xl bg-[#000000] text-[#FBFBF8] hover:bg-[#111111] disabled:opacity-40 disabled:cursor-not-allowed transition-colors">
-                <CheckCircle2 className="w-4 h-4" strokeWidth={2.5} /> Mark Resolved
-              </button>
-            </div>
+          <div className="action-bar">
+            <button className="btn" disabled={updating || incident.status === 'reviewed'} onClick={() => setStatus('reviewed')}>
+              <RotateCcw size={12} strokeWidth={2.5} /> Mark reviewed
+            </button>
+            <button className="btn" disabled={updating || incident.status === 'false_positive'} onClick={() => setStatus('false_positive')}>
+              <X size={12} strokeWidth={2.5} /> False positive
+            </button>
+            <button className="btn primary" disabled={updating || incident.status === 'resolved'} onClick={() => setStatus('resolved')}>
+              <Check size={12} strokeWidth={3} /> Mark resolved
+            </button>
           </div>
         </div>
+      </div>
       </div>
     </div>
   );

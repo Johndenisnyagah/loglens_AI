@@ -118,3 +118,16 @@ class UploadResult(BaseModel):
     parsed_events_count: int
     incidents_created: int
     status: str
+
+
+# ── Audit log ─────────────────────────────────────────────────────────────────
+
+class AuditLogResponse(BaseModel):
+    id: int
+    action: str
+    target_type: Optional[str]
+    target_id: Optional[int]
+    details: Optional[str]
+    created_at: datetime
+
+    model_config = {"from_attributes": True}

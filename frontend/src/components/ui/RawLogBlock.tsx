@@ -8,11 +8,14 @@ export function RawLogBlock({ lines, maxVisible = 10 }: Props) {
   const hidden  = lines.length - visible.length;
 
   return (
-    <div className="bg-[#111827] rounded-2xl overflow-hidden">
-      <pre className="text-xs font-mono text-[#D1D5DB] p-5 overflow-x-auto whitespace-pre-wrap break-all leading-relaxed">
+    <div className="rounded-xl overflow-hidden" style={{ backgroundColor: '#0F1117' }}>
+      <pre
+        className="text-xs text-[#8A909C] p-5 overflow-x-auto whitespace-pre-wrap break-all leading-relaxed"
+        style={{ fontFamily: "'JetBrains Mono', monospace" }}
+      >
         {visible.join('\n')}
         {hidden > 0 && (
-          <span className="block mt-2 text-[#6B7280]">
+          <span className="block mt-2 text-[#555D6B]">
             … and {hidden} more line{hidden !== 1 ? 's' : ''}
           </span>
         )}

@@ -6,7 +6,7 @@ from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 
 from app.database import create_all_tables
-from app.routers import dashboard, incidents, logs
+from app.routers import audit, dashboard, incidents, logs
 
 load_dotenv()
 
@@ -40,6 +40,7 @@ app.add_middleware(
 app.include_router(logs.router)
 app.include_router(incidents.router)
 app.include_router(dashboard.router)
+app.include_router(audit.router)
 
 
 @app.get("/health", tags=["health"])
