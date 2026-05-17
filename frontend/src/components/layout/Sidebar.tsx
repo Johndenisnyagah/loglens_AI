@@ -4,6 +4,59 @@ import {
   Settings as SettingsIcon, Bell, Menu, X,
   ShieldAlert, AlertTriangle, FileCheck, CheckCircle2,
 } from 'lucide-react';
+import { getIncidents } from '../../api/incidents';
+import type { Incident } from '../../types';
+
+const SEEN_KEY = 'loglens-seen-incident-ids';
+
+const RULE_SHORT: Record<string, string> = {
+  brute_force_failed_logins:       'Brute-force',
+  sensitive_username_targeted:     'Sensitive username',
+  successful_login_after_failures: 'Login after failures',
+  username_enumeration:            'Username enumeration',
+};
+
+function sevToNotifType(s: string): Notif['type'] {
+  if (s === 'critical') return 'critical';
+  if (s === 'high')     return 'high';
+  if (s === 'medium')   return 'info';
+  return 'success';
+}
+
+function relTime(iso: string): string {
+  const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  if (m < 1)  return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  return `${Math.floor(h / 24)}d ago`;
+}
+
+function incidentToNotif(inc: Incident): Notif {
+  const body = inc.source_ip
+    ? `${inc.source_ip} · ${RULE_SHORT[inc.detection_rule] ?? inc.detection_rule}`
+    : `${inc.username ?? 'Unknown'} · ${RULE_SHORT[inc.detection_rule] ?? inc.detection_rule}`;
+  return {
+    id:   inc.id,
+    type: sevToNotifType(inc.severity),
+    title: inc.title,
+    body,
+    time: relTime(inc.created_at),
+    read: false,
+  };
+}
+
+function loadSeen(): Set<number> {
+  try {
+    const raw = localStorage.getItem(SEEN_KEY);
+    if (raw) return new Set(JSON.parse(raw) as number[]);
+  } catch {}
+  return new Set();
+}
+
+function saveSeen(ids: Set<number>) {
+  try { localStorage.setItem(SEEN_KEY, JSON.stringify([...ids])); } catch {}
+}
 
 function OverviewIcon({ size = 22 }: { size?: number }) {
   return (
@@ -40,11 +93,10 @@ function AuditIcon({ size = 22 }: { size?: number }) {
 interface NavItem { to: string; icon: React.ElementType; label: string; end?: boolean; }
 
 const NAV: NavItem[] = [
-  { to: '/',          icon: OverviewIcon, label: 'Overview',    end: true },
-  { to: '/incidents', icon: AISummariesIcon, label: 'AI Summaries'        },
-  { to: '/upload',    icon: LogsIcon,     label: 'Logs'                   },
-  { to: '/audit',     icon: AuditIcon,    label: 'Audit Log'              },
-  { to: '/settings',  icon: SettingsIcon, label: 'Settings'               },
+  { to: '/',          icon: OverviewIcon,    label: 'Overview',     end: true },
+  { to: '/incidents', icon: AISummariesIcon, label: 'AI Summaries'            },
+  { to: '/upload',    icon: LogsIcon,        label: 'Logs'                    },
+  { to: '/audit',     icon: AuditIcon,       label: 'Audit Log'               },
 ];
 
 interface Notif {
@@ -56,12 +108,7 @@ interface Notif {
   read: boolean;
 }
 
-const INIT_NOTIFS: Notif[] = [
-  { id: 1, type: 'critical', title: 'Brute-force attack detected',     body: '192.168.1.105 — 127 failed SSH attempts in 3 min', time: '2m ago', read: false },
-  { id: 2, type: 'high',     title: 'Successful login after failures', body: 'root signed in after 47 failures · 10.0.0.22',     time: '8m ago', read: false },
-  { id: 3, type: 'info',     title: 'Log analysis complete',           body: 'auth.log · 3 incidents created, 12,847 lines',     time: '1h ago', read: true  },
-  { id: 4, type: 'success',  title: 'Incident INC-009 resolved',       body: 'Marked resolved by Sarah Chen',                   time: '3h ago', read: true  },
-];
+const INIT_NOTIFS: Notif[] = [];
 
 const NOTIF_COLOR: Record<Notif['type'], string> = {
   critical: 'var(--color-danger)',
@@ -77,6 +124,9 @@ const NOTIF_ICON: Record<Notif['type'], React.ElementType> = {
   success:  CheckCircle2,
 };
 
+const COLLAPSED_W = 69;
+const EXPANDED_W  = 210;
+
 const STYLES = `
 /* ── pulsing badge ─────────────────────────────── */
 .notif-badge {
@@ -90,7 +140,7 @@ const STYLES = `
 /* ── slide-in panel ────────────────────────────── */
 .notif-panel {
   position: fixed;
-  top: 0; left: 69px;
+  top: 0;
   height: 100vh;
   width: 300px;
   background: var(--color-panel);
@@ -194,11 +244,15 @@ const STYLES = `
 export function Sidebar() {
   const { pathname } = useLocation();
   const navigate = useNavigate();
+  const [expanded, setExpanded] = useState(false);
   const [showNotifs, setShowNotifs] = useState(false);
   const [notifs, setNotifs] = useState<Notif[]>(INIT_NOTIFS);
-  const panelRef = useRef<HTMLDivElement>(null);
+  const panelRef    = useRef<HTMLDivElement>(null);
+  const seenIds     = useRef<Set<number>>(loadSeen());
+  const isFirstPoll = useRef(true);
 
   const unread = notifs.filter((n) => !n.read).length;
+  const sidebarW = expanded ? EXPANDED_W : COLLAPSED_W;
 
   function isActive(to: string, end?: boolean) {
     if (to === '/audit')     return pathname === '/audit' || pathname === '/reports';
@@ -212,21 +266,86 @@ export function Sidebar() {
   useEffect(() => {
     if (!showNotifs) return;
     function onDown(e: PointerEvent) {
-      if (panelRef.current && !panelRef.current.contains(e.target as Node)) {
-        setShowNotifs(false);
-      }
+      if (panelRef.current && !panelRef.current.contains(e.target as Node)) setShowNotifs(false);
     }
     document.addEventListener('pointerdown', onDown);
     return () => document.removeEventListener('pointerdown', onDown);
   }, [showNotifs]);
 
+  // Poll for new incidents every 30 s and surface as notifications
+  useEffect(() => {
+    async function poll() {
+      try {
+        const incidents = await getIncidents();
+
+        if (isFirstPoll.current) {
+          isFirstPoll.current = false;
+          if (seenIds.current.size === 0) {
+            // First-ever visit — mark everything seen so we don't flood
+            incidents.forEach((inc) => seenIds.current.add(inc.id));
+            saveSeen(seenIds.current);
+            return;
+          }
+        }
+
+        const fresh = incidents.filter((inc) => !seenIds.current.has(inc.id));
+        if (fresh.length === 0) return;
+
+        fresh.forEach((inc) => seenIds.current.add(inc.id));
+        saveSeen(seenIds.current);
+        setNotifs((prev) => [...fresh.map(incidentToNotif), ...prev].slice(0, 20));
+      } catch {
+        // Notifications are non-critical — fail silently
+      }
+    }
+
+    poll();
+    const t = setInterval(poll, 30_000);
+    return () => clearInterval(t);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Shared label transition — fades in slightly after width starts expanding
+  const labelStyle: React.CSSProperties = {
+    opacity:   expanded ? 1 : 0,
+    maxWidth:  expanded ? '160px' : '0px',
+    overflow:  'hidden',
+    whiteSpace: 'nowrap',
+    fontSize:  13,
+    fontWeight: 500,
+    letterSpacing: '-0.01em',
+    transition: expanded
+      ? 'opacity 0.15s ease 0.1s, max-width 0.22s ease'
+      : 'opacity 0.08s ease, max-width 0.22s ease',
+  };
+
+  // Nav / bottom button shared layout style
+  function btnLayout(active = false): React.CSSProperties {
+    return {
+      display:        'flex',
+      alignItems:     'center',
+      justifyContent: expanded ? 'flex-start' : 'center',
+      gap:            expanded ? '10px' : '0px',
+      padding:        expanded ? '0 14px' : '0',
+      width:          expanded ? '100%' : '44px',
+      height:         '44px',
+      border:         'none',
+      cursor:         'pointer',
+      fontFamily:     'inherit',
+      flexShrink:     0,
+      color:           active ? 'white' : 'var(--color-text-dim)',
+      backgroundColor: active ? 'var(--color-accent)' : 'transparent',
+      boxShadow:       active ? '0 6px 16px -6px rgba(75,108,246,0.6)' : 'none',
+      transition:      'background 0.15s, color 0.15s, width 0.22s ease, padding 0.22s ease, gap 0.22s ease',
+    };
+  }
+
   return (
     <>
       <style>{STYLES}</style>
 
-      {/* ── Notifications panel ── */}
+      {/* ── Notifications panel (left offset tracks sidebar width) ── */}
       {showNotifs && (
-        <div className="notif-panel" ref={panelRef}>
+        <div className="notif-panel" ref={panelRef} style={{ left: sidebarW }}>
           <div className="notif-hd">
             <h3>Notifications</h3>
             {unread > 0 && <span className="notif-count">{unread} new</span>}
@@ -266,71 +385,130 @@ export function Sidebar() {
 
       {/* ── Sidebar ── */}
       <aside
-        className="flex flex-col items-center shrink-0 py-5 h-screen overflow-hidden"
-        style={{ width: '69px', backgroundColor: 'var(--color-rail)' }}
+        className="flex flex-col shrink-0 py-5 h-screen overflow-hidden"
+        style={{
+          width:           sidebarW,
+          backgroundColor: 'var(--color-rail)',
+          alignItems:      expanded ? 'flex-start' : 'center',
+          transition:      'width 0.22s ease, align-items 0s',
+        }}
       >
         {/* Burger */}
         <button
-          title="Menu"
-          className="w-7 h-7 flex items-center justify-center text-[var(--color-text-mid)] hover:text-[var(--color-text)] transition-colors mb-6"
+          title={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
+          onClick={() => setExpanded((v) => !v)}
+          style={{
+            display:        'flex',
+            alignItems:     'center',
+            justifyContent: expanded ? 'flex-start' : 'center',
+            width:          expanded ? '100%' : '28px',
+            height:         '28px',
+            padding:        expanded ? '0 22px' : '0',
+            marginBottom:   '24px',
+            background:     'none',
+            border:         'none',
+            cursor:         'pointer',
+            color:          'var(--color-text-mid)',
+            flexShrink:     0,
+            transition:     'color 0.15s, width 0.22s ease, padding 0.22s ease',
+          }}
+          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-text)'; }}
+          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-mid)'; }}
         >
-          <Menu size={18} strokeWidth={2} />
+          <Menu size={18} strokeWidth={2} style={{ flexShrink: 0 }} />
         </button>
 
         {/* Nav — vertically centered */}
-        <nav className="flex flex-col items-center gap-1 flex-1 justify-center">
-          {NAV.slice(0, 4).map(({ to, icon: Icon, label, end }) => {
+        <nav
+          style={{
+            display:        'flex',
+            flexDirection:  'column',
+            alignItems:     expanded ? 'stretch' : 'center',
+            gap:            4,
+            flex:           1,
+            justifyContent: 'center',
+            width:          '100%',
+            padding:        expanded ? '0 8px' : '0',
+            transition:     'padding 0.22s ease',
+          }}
+        >
+          {NAV.map(({ to, icon: Icon, label, end }) => {
             const active = isActive(to, end);
             return (
               <button
                 key={to}
                 onClick={() => navigate(to)}
                 title={label}
-                className="w-11 h-11 flex items-center justify-center transition-colors"
-                style={{
-                  color:           active ? 'white' : 'var(--color-text-dim)',
-                  backgroundColor: active ? 'var(--color-accent)' : 'transparent',
-                  boxShadow:       active ? '0 6px 16px -6px rgba(75,108,246,0.6)' : 'none',
-                }}
+                style={btnLayout(active)}
                 onMouseEnter={(e) => { if (!active) e.currentTarget.style.color = 'var(--color-text)'; }}
                 onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = 'var(--color-text-dim)'; }}
               >
-                <Icon size={22} strokeWidth={1.8} />
+                <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+                  <Icon size={22} />
+                </span>
+                <span style={labelStyle}>{label}</span>
               </button>
             );
           })}
         </nav>
 
         {/* Bottom — bell + settings */}
-        <div className="flex flex-col items-center gap-2">
+        <div
+          style={{
+            display:       'flex',
+            flexDirection: 'column',
+            alignItems:    expanded ? 'stretch' : 'center',
+            gap:           8,
+            width:         '100%',
+            padding:       expanded ? '0 8px' : '0',
+            transition:    'padding 0.22s ease',
+          }}
+        >
           {/* Bell */}
           <button
             title={unread > 0 ? `Notifications · ${unread} new` : 'Notifications'}
             onClick={() => setShowNotifs((v) => !v)}
-            className="relative w-9 h-9 flex items-center justify-content-center"
             style={{
-              display: 'flex', alignItems: 'center', justifyContent: 'center',
-              color: unread > 0 ? 'var(--color-warn)' : 'var(--color-text-dim)',
-              transition: 'color 0.15s',
+              ...btnLayout(),
+              height: '36px',
+              width:  expanded ? '100%' : '36px',
+              color:  unread > 0 ? 'var(--color-warn)' : 'var(--color-text-dim)',
+              position: 'relative',
             }}
             onMouseEnter={(e) => { if (!unread) e.currentTarget.style.color = 'var(--color-text)'; }}
-            onMouseLeave={(e) => { if (!unread) e.currentTarget.style.color = unread > 0 ? 'var(--color-warn)' : 'var(--color-text-dim)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = unread > 0 ? 'var(--color-warn)' : 'var(--color-text-dim)'; }}
           >
-            <Bell size={20} strokeWidth={1.8} />
-            {unread > 0 && (
-              <span
-                className="notif-badge absolute -top-0.5 -right-0.5 w-[17px] h-[17px] text-[9px] font-bold flex items-center justify-center"
-                style={{
-                  borderRadius: '50%',
-                  backgroundColor: 'var(--color-warn)',
-                  color: '#1a1000',
-                  fontFamily: 'var(--font-sans)',
-                  lineHeight: 1,
-                }}
-              >
-                {unread}
-              </span>
-            )}
+            {/* Badge anchored to icon, not the full button */}
+            <span style={{ position: 'relative', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+              <Bell size={20} strokeWidth={1.8} />
+              {unread > 0 && (
+                <span
+                  className="notif-badge"
+                  style={{
+                    position:        'absolute',
+                    top:             -2,
+                    right:           -2,
+                    width:           17,
+                    height:          17,
+                    borderRadius:    '50%',
+                    backgroundColor: 'var(--color-warn)',
+                    color:           '#1a1000',
+                    fontSize:        9,
+                    fontWeight:      700,
+                    display:         'flex',
+                    alignItems:      'center',
+                    justifyContent:  'center',
+                    fontFamily:      'var(--font-sans)',
+                    lineHeight:      1,
+                  }}
+                >
+                  {unread}
+                </span>
+              )}
+            </span>
+            <span style={labelStyle}>
+              Notifications{unread > 0 ? ` (${unread})` : ''}
+            </span>
           </button>
 
           {/* Settings */}
@@ -340,15 +518,14 @@ export function Sidebar() {
               <button
                 onClick={() => navigate('/settings')}
                 title="Settings"
-                className="w-11 h-11 flex items-center justify-center transition-colors"
-                style={{
-                  color:           active ? 'white' : 'var(--color-text-dim)',
-                  backgroundColor: active ? 'var(--color-accent)' : 'transparent',
-                }}
+                style={btnLayout(active)}
                 onMouseEnter={(e) => { if (!active) e.currentTarget.style.color = 'var(--color-text)'; }}
                 onMouseLeave={(e) => { if (!active) e.currentTarget.style.color = 'var(--color-text-dim)'; }}
               >
-                <SettingsIcon size={22} strokeWidth={1.8} />
+                <span style={{ flexShrink: 0, display: 'flex', alignItems: 'center' }}>
+                  <SettingsIcon size={22} strokeWidth={1.8} />
+                </span>
+                <span style={labelStyle}>Settings</span>
               </button>
             );
           })()}

@@ -1,6 +1,7 @@
 from collections import defaultdict
+from datetime import datetime, timedelta
 
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, Query
 from sqlalchemy.orm import Session
 
 from app import models
@@ -13,31 +14,51 @@ SEVERITY_ORDER = {"low": 0, "medium": 1, "high": 2, "critical": 3}
 
 
 @router.get("/summary", response_model=DashboardSummaryResponse)
-def get_dashboard_summary(db: Session = Depends(get_db)):
-    total_logs = db.query(models.LogFile).count()
-    total_incidents = db.query(models.Incident).count()
+def get_dashboard_summary(
+    db: Session = Depends(get_db),
+    hours: int = Query(0, ge=0, description="Time window in hours; 0 = all time"),
+    log_file_id: int | None = Query(None, description="Filter to a specific log file (host)"),
+):
+    cutoff = datetime.utcnow() - timedelta(hours=hours) if hours > 0 else None
+
+    def inc_q():
+        q = db.query(models.Incident)
+        if cutoff is not None:
+            q = q.filter(models.Incident.created_at >= cutoff)
+        if log_file_id is not None:
+            q = q.filter(models.Incident.log_file_id == log_file_id)
+        return q
+
+    log_q = db.query(models.LogFile)
+    if cutoff is not None:
+        log_q = log_q.filter(models.LogFile.uploaded_at >= cutoff)
+    if log_file_id is not None:
+        log_q = log_q.filter(models.LogFile.id == log_file_id)
+
+    total_logs = log_q.count()
+    total_incidents = inc_q().count()
 
     high_risk_incidents = (
-        db.query(models.Incident)
+        inc_q()
         .filter(models.Incident.severity.in_(["high", "critical"]))
         .count()
     )
 
     needs_review_count = (
-        db.query(models.Incident)
+        inc_q()
         .filter(models.Incident.needs_human_review == True, models.Incident.status == "open")  # noqa: E712
         .count()
     )
 
     recent_incidents = (
-        db.query(models.Incident)
+        inc_q()
         .order_by(models.Incident.created_at.desc())
         .limit(10)
         .all()
     )
 
     # Top suspicious IPs — group incidents by source_ip
-    all_incidents = db.query(models.Incident).filter(models.Incident.source_ip.isnot(None)).all()
+    all_incidents = inc_q().filter(models.Incident.source_ip.isnot(None)).all()
 
     ip_data: dict[str, dict] = defaultdict(lambda: {"count": 0, "severities": []})
     for inc in all_incidents:

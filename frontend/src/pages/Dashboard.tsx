@@ -1,7 +1,8 @@
 import { useEffect, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { getDashboardSummary } from '../api/dashboard';
-import type { DashboardSummary, Severity } from '../types';
+import { getLogs } from '../api/logs';
+import type { DashboardSummary, LogFile, Severity } from '../types';
 import { LoadingState } from '../components/ui/LoadingState';
 import { ErrorState } from '../components/ui/ErrorState';
 import { PageHead } from '../components/ui/PageHead';
@@ -9,6 +10,14 @@ import { PillFilter } from '../components/ui/PillFilter';
 import { UserChip } from '../components/ui/UserChip';
 import { SeverityBadge } from '../components/ui/SeverityBadge';
 import { ChevronRight } from 'lucide-react';
+
+const TIME_OPTS = ['Last 24 hours', 'Last 7 days', 'Last 30 days', 'All time'];
+const TIME_HOURS: Record<string, number> = {
+  'Last 24 hours': 24,
+  'Last 7 days':   168,
+  'Last 30 days':  720,
+  'All time':      0,
+};
 
 const STYLES = `
 .dash-content { display: flex; flex-direction: column; min-height: 100%; }
@@ -57,7 +66,17 @@ const STYLES = `
 .ai-body { font-size: 13px; line-height: 1.65; color: var(--color-text-mid); margin: 0 0 18px; }
 .ai-link { font-size: 11px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-warn); font-weight: 600; display: inline-flex; gap: 8px; text-decoration: none; align-items: center; }
 .ai-meta { display: flex; align-items: center; gap: 8px; margin-top: 22px; padding-top: 18px; border-top: 1px solid var(--color-line-soft); font-size: 11px; color: var(--color-text-dim); }
-.ai-pulse { width: 6px; height: 6px; background: var(--color-warn); border-radius: 50%; box-shadow: 0 0 12px var(--color-warn); }
+.ai-pulse-wrap {
+  width: 16px; height: 16px; flex-shrink: 0;
+  border: 1px solid rgba(249,229,71,0.55);
+  display: flex; align-items: center; justify-content: center;
+  animation: ai-sq-pulse 4s ease-in-out infinite;
+}
+.ai-pulse-dot { width: 6px; height: 6px; background: var(--color-warn); border-radius: 50%; }
+@keyframes ai-sq-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(249,229,71,0.45); border-color: rgba(249,229,71,0.45); }
+  50%      { box-shadow: 0 0 0 5px rgba(249,229,71,0);  border-color: rgba(249,229,71,0.95); }
+}
 
 .ips { display: flex; flex-direction: column; gap: 0; }
 .ip-row { display: grid; grid-template-columns: 1fr auto auto; align-items: center; gap: 16px; padding: 14px 0; border-bottom: 1px solid var(--color-line-soft); }
@@ -87,24 +106,42 @@ function formatTime(iso: string) {
 
 export function Dashboard() {
   const navigate = useNavigate();
-  const [data, setData] = useState<DashboardSummary | null>(null);
+  const [data, setData]       = useState<DashboardSummary | null>(null);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState('');
+  const [fetching, setFetching] = useState(false); // soft reload (filters changed)
+  const [error, setError]     = useState('');
+  const [logFiles, setLogFiles] = useState<LogFile[]>([]);
+  const [timeRange, setTimeRange] = useState('All time');
+  const [hostLabel, setHostLabel] = useState('All hosts');
 
-  const load = () => {
-    setLoading(true); setError('');
-    getDashboardSummary()
+  const hostOpts = ['All hosts', ...logFiles.map((f) => f.filename)];
+
+  const selectedFileId = hostLabel === 'All hosts'
+    ? undefined
+    : logFiles.find((f) => f.filename === hostLabel)?.id;
+
+  const load = (soft = false) => {
+    soft ? setFetching(true) : setLoading(true);
+    setError('');
+    getDashboardSummary({ hours: TIME_HOURS[timeRange], log_file_id: selectedFileId })
       .then(setData)
       .catch(() => setError('Could not load dashboard data. Is the backend running?'))
-      .finally(() => setLoading(false));
+      .finally(() => { setLoading(false); setFetching(false); });
   };
 
-  useEffect(() => { load(); }, []);
+  // Fetch log files once for host dropdown
+  useEffect(() => { getLogs().then(setLogFiles).catch(() => {}); }, []);
+
+  // Reload when filters change (soft reload — no full spinner)
+  useEffect(() => { load(true); }, [timeRange, hostLabel]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // Initial hard load
+  useEffect(() => { load(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
   const today = new Date().toLocaleDateString('en-US', { weekday: 'long', day: 'numeric', month: 'long' });
 
   if (loading) return <div className="dash-content"><style>{STYLES}</style><div className="dash-bd"><LoadingState message="Loading overview…" /></div></div>;
-  if (error || !data) return <div className="dash-content"><style>{STYLES}</style><div className="dash-bd"><ErrorState message={error || 'No data.'} onRetry={load} /></div></div>;
+  if (error || !data) return <div className="dash-content"><style>{STYLES}</style><div className="dash-bd"><ErrorState message={error || 'No data.'} onRetry={() => load()} /></div></div>;
 
   const metrics = [
     { label: 'Logs analyzed',       num: data.total_logs,          delta: '',           bg: 'rgba(181,186,196,0.5)', width: Math.min(100, data.total_logs * 4) },
@@ -112,6 +149,8 @@ export function Dashboard() {
     { label: 'High-risk incidents', num: data.high_risk_incidents, delta: '',           bg: 'rgba(239,91,107,0.65)', width: Math.min(100, data.high_risk_incidents * 6) },
     { label: 'Needs human review',  num: data.needs_review_count,  delta: '',           bg: 'rgba(249,229,71,0.55)', width: Math.min(100, data.needs_review_count * 5) },
   ];
+
+  const subtitle = `Showing activity across ${hostLabel === 'All hosts' ? 'all monitored hosts' : hostLabel} · ${timeRange.toLowerCase()}.`;
 
   return (
     <div className="dash-content">
@@ -121,18 +160,30 @@ export function Dashboard() {
       <PageHead
         eyebrow={`${today} · last analyzed just now`}
         title="Security overview"
-        subtitle="Showing activity across all monitored hosts for the last 24 hours."
+        subtitle={subtitle}
         right={
           <>
-            <PillFilter>Last 24 hours</PillFilter>
-            <PillFilter>All hosts</PillFilter>
+            <PillFilter
+              options={TIME_OPTS}
+              value={timeRange}
+              onChange={setTimeRange}
+            >
+              Last 24 hours
+            </PillFilter>
+            <PillFilter
+              options={hostOpts}
+              value={hostLabel}
+              onChange={setHostLabel}
+            >
+              All hosts
+            </PillFilter>
             <UserChip />
           </>
         }
       />
       </div>
 
-      <div className="dash-bd">
+      <div className="dash-bd" style={{ opacity: fetching ? 0.5 : 1, transition: 'opacity 0.2s ease' }}>
       {/* METRICS */}
       <div className="metrics">
         {metrics.map((m) => (
@@ -219,7 +270,7 @@ export function Dashboard() {
               Open full report <ChevronRight size={10} strokeWidth={2.5} />
             </a>
             <div className="ai-meta">
-              <div className="ai-pulse" />
+              <div className="ai-pulse-wrap"><div className="ai-pulse-dot" /></div>
               <span>Live · {data.top_suspicious_ips.reduce((s, ip) => s + ip.incident_count, 0)} events analyzed</span>
             </div>
           </div>
