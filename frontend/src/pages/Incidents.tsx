@@ -18,7 +18,7 @@ const STYLES = `
 
 .split { display: grid; grid-template-columns: 1.05fr 1.5fr; gap: 0; border-top: 1px solid var(--color-line-soft); }
 
-.col-list { padding: 24px 0; display: flex; flex-direction: column; min-width: 0; border-right: 1px solid var(--color-line-soft); }
+.col-list { padding: 24px 0; display: flex; flex-direction: column; min-width: 0; border-right: 1px solid var(--color-line-soft); position: relative; z-index: 1; }
 .list-toolbar { padding: 0 24px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 18px; }
 .list-toolbar h3 { font-size: 13px; font-weight: 600; margin: 0; color: var(--color-text); }
 .list-toolbar .chips { display: flex; gap: 6px; }
@@ -28,7 +28,9 @@ const STYLES = `
 .ai-card { padding: 18px 24px; margin-right: 24px; cursor: pointer; transition: background 0.12s; border-top: 1px solid var(--color-line-soft); }
 .ai-card:first-of-type { border-top: 0; }
 .ai-card:hover { background: rgba(255,255,255,0.025); }
-.ai-card.selected { background: var(--color-panel); margin-right: 0; border-top-color: transparent; }
+.ai-card.selected { background: var(--color-panel); margin-right: 0; border-top-color: transparent; position: relative; z-index: 2; }
+.ai-card.selected::before { content: ''; position: absolute; top: 0; right: 0; bottom: 0; width: 72px; background: linear-gradient(to right, transparent, var(--color-panel)); pointer-events: none; z-index: 4; }
+.ai-card.selected::after { content: ''; position: absolute; top: 0; right: -1px; bottom: 0; width: 2px; background: var(--color-panel); z-index: 5; }
 .ai-card.selected + .ai-card { border-top-color: transparent; }
 .ai-card .meta-line { display: flex; justify-content: space-between; align-items: center; font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; font-weight: 500; color: var(--color-text-dim); margin-bottom: 10px; }
 .ai-card .meta-line .id { font-family: var(--font-mono); letter-spacing: 0.08em; }
