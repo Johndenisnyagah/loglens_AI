@@ -5,6 +5,7 @@ export interface IncidentFilters {
   severity?: string;
   status?: string;
   search?: string;
+  hours?: number;
 }
 
 export async function getIncidents(filters?: IncidentFilters): Promise<Incident[]> {

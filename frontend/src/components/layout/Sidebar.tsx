@@ -1,7 +1,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useLocation, useNavigate } from 'react-router-dom';
 import {
-  Settings as SettingsIcon, Bell, Menu, X,
+  Settings as SettingsIcon, Bell, X,
   ShieldAlert, AlertTriangle, FileCheck, CheckCircle2,
 } from 'lucide-react';
 import { getIncidents } from '../../api/incidents';
@@ -56,6 +56,25 @@ function loadSeen(): Set<number> {
 
 function saveSeen(ids: Set<number>) {
   try { localStorage.setItem(SEEN_KEY, JSON.stringify([...ids])); } catch {}
+}
+
+function CollapseIcon({ size = 16 }: { size?: number }) {
+  return (
+    <svg xmlns="http://www.w3.org/2000/svg" width={size} height={size} viewBox="0 0 256 256" fill="none">
+      <rect x="40" y="40" width="176" height="176" rx="8" transform="translate(256 0) rotate(90)" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/>
+      <line x1="88" y1="128" x2="168" y2="128" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/>
+      <polyline points="120 96 88 128 120 160" stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="16"/>
+    </svg>
+  );
+}
+
+function LogLensMark({ size = 28, fg = '#e6e8ec', accent = '#4b6cf6' }: { size?: number; fg?: string; accent?: string }) {
+  return (
+    <svg width={size} height={size} viewBox="0 0 64 64" fill="none" shapeRendering="crispEdges">
+      <path d="M6 6 H22 V40 H40 V54 H6 Z" fill={fg} />
+      <path d="M58 58 H42 V24 H24 V10 H58 Z" fill={accent} />
+    </svg>
+  );
 }
 
 function OverviewIcon({ size = 22 }: { size?: number }) {
@@ -304,38 +323,42 @@ export function Sidebar() {
     return () => clearInterval(t);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
-  // Shared label transition — fades in slightly after width starts expanding
+  const TX = '0.3s cubic-bezier(0.4, 0, 0.2, 1)';
+
+  // Shared label transition
   const labelStyle: React.CSSProperties = {
-    opacity:   expanded ? 1 : 0,
-    maxWidth:  expanded ? '160px' : '0px',
-    overflow:  'hidden',
+    opacity:    expanded ? 1 : 0,
+    maxWidth:   expanded ? '160px' : '0px',
+    overflow:   'hidden',
     whiteSpace: 'nowrap',
-    fontSize:  13,
+    fontSize:   13,
     fontWeight: 500,
     letterSpacing: '-0.01em',
     transition: expanded
-      ? 'opacity 0.15s ease 0.1s, max-width 0.22s ease'
-      : 'opacity 0.08s ease, max-width 0.22s ease',
+      ? `opacity 0.18s ease 0.15s, max-width ${TX}`
+      : `opacity 0.08s ease, max-width ${TX}`,
   };
 
   // Nav / bottom button shared layout style
+  // Always justifyContent flex-start + paddingLeft to avoid instant alignment jumps
   function btnLayout(active = false): React.CSSProperties {
     return {
-      display:        'flex',
-      alignItems:     'center',
-      justifyContent: expanded ? 'flex-start' : 'center',
-      gap:            expanded ? '10px' : '0px',
-      padding:        expanded ? '0 14px' : '0',
-      width:          expanded ? '100%' : '44px',
-      height:         '44px',
-      border:         'none',
-      cursor:         'pointer',
-      fontFamily:     'inherit',
-      flexShrink:     0,
-      color:           active ? 'white' : 'var(--color-text-dim)',
-      backgroundColor: active ? 'var(--color-accent)' : 'transparent',
-      boxShadow:       active ? '0 6px 16px -6px rgba(75,108,246,0.6)' : 'none',
-      transition:      'background 0.15s, color 0.15s, width 0.22s ease, padding 0.22s ease, gap 0.22s ease',
+      display:         'flex',
+      alignItems:      'center',
+      justifyContent:  'flex-start',
+      gap:             expanded ? '10px' : '0px',
+      paddingLeft:     expanded ? '14px' : '11px',
+      paddingRight:    0,
+      width:           expanded ? '100%' : '44px',
+      height:          '44px',
+      border:          'none',
+      cursor:          'pointer',
+      fontFamily:      'inherit',
+      flexShrink:      0,
+      color:            active ? 'white' : 'var(--color-text-dim)',
+      backgroundColor:  active ? 'var(--color-accent)' : 'transparent',
+      boxShadow:        active ? '0 6px 16px -6px rgba(75,108,246,0.6)' : 'none',
+      transition:       `background 0.15s, color 0.15s, width ${TX}, padding-left ${TX}, gap ${TX}`,
     };
   }
 
@@ -385,51 +408,95 @@ export function Sidebar() {
 
       {/* ── Sidebar ── */}
       <aside
-        className="flex flex-col shrink-0 py-5 h-screen overflow-hidden"
+        className="flex flex-col items-center shrink-0 py-5 h-screen overflow-hidden"
         style={{
           width:           sidebarW,
           backgroundColor: 'var(--color-rail)',
-          alignItems:      expanded ? 'flex-start' : 'center',
-          transition:      'width 0.22s ease, align-items 0s',
+          transition:      `width ${TX}`,
         }}
       >
-        {/* Burger */}
-        <button
-          title={expanded ? 'Collapse sidebar' : 'Expand sidebar'}
-          onClick={() => setExpanded((v) => !v)}
-          style={{
-            display:        'flex',
-            alignItems:     'center',
-            justifyContent: expanded ? 'flex-start' : 'center',
-            width:          expanded ? '100%' : '28px',
-            height:         '28px',
-            padding:        expanded ? '0 22px' : '0',
-            marginBottom:   '24px',
-            background:     'none',
-            border:         'none',
-            cursor:         'pointer',
-            color:          'var(--color-text-mid)',
-            flexShrink:     0,
-            transition:     'color 0.15s, width 0.22s ease, padding 0.22s ease',
-          }}
-          onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-text)'; }}
-          onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-mid)'; }}
-        >
-          <Menu size={18} strokeWidth={2} style={{ flexShrink: 0 }} />
-        </button>
+        {/* Logo row — logo click expands when collapsed, burger collapses when expanded */}
+        <div style={{
+          display:      'flex',
+          alignItems:   'center',
+          width:        '100%',
+          paddingLeft:  expanded ? '16px' : '17px',
+          paddingRight: expanded ? '10px' : '0',
+          marginBottom: '20px',
+          flexShrink:   0,
+          transition:   `padding ${TX}`,
+        }}>
+          {/* Logo + name — click to expand when collapsed */}
+          <button
+            onClick={!expanded ? () => setExpanded(true) : undefined}
+            title={!expanded ? 'Expand sidebar' : undefined}
+            style={{
+              display:    'flex',
+              alignItems: 'center',
+              gap:        10,
+              background: 'none',
+              border:     'none',
+              padding:    0,
+              cursor:     expanded ? 'default' : 'pointer',
+              flexShrink: 0,
+            }}
+          >
+            <LogLensMark size={34} />
+            <span style={{
+              opacity:       expanded ? 1 : 0,
+              maxWidth:      expanded ? '110px' : '0px',
+              overflow:      'hidden',
+              whiteSpace:    'nowrap',
+              fontSize:      14,
+              fontWeight:    700,
+              letterSpacing: '-0.02em',
+              color:         'var(--color-text)',
+              transition:    expanded
+                ? `opacity 0.18s ease 0.15s, max-width ${TX}`
+                : `opacity 0.08s ease, max-width ${TX}`,
+            }}>
+              LogLens AI
+            </span>
+          </button>
+
+          {/* Hamburger — right side, fades in when expanded */}
+          <button
+            onClick={() => setExpanded(false)}
+            title="Collapse sidebar"
+            style={{
+              marginLeft:    'auto',
+              flexShrink:    0,
+              display:       'flex',
+              alignItems:    'center',
+              justifyContent:'center',
+              background:    'none',
+              border:        'none',
+              cursor:        'pointer',
+              color:         'var(--color-text-dim)',
+              padding:       '4px 6px',
+              opacity:       expanded ? 1 : 0,
+              pointerEvents: expanded ? 'auto' : 'none',
+              transition:    `opacity 0.15s ease ${expanded ? '0.15s' : '0s'}, color 0.15s`,
+            }}
+            onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-text)'; }}
+            onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-dim)'; }}
+          >
+            <CollapseIcon size={16} />
+          </button>
+        </div>
 
         {/* Nav — vertically centered */}
         <nav
           style={{
             display:        'flex',
             flexDirection:  'column',
-            alignItems:     expanded ? 'stretch' : 'center',
+            alignItems:     'center',
             gap:            4,
             flex:           1,
             justifyContent: 'center',
             width:          '100%',
             padding:        expanded ? '0 8px' : '0',
-            transition:     'padding 0.22s ease',
+            transition:     `padding ${TX}`,
           }}
         >
           {NAV.map(({ to, icon: Icon, label, end }) => {
@@ -457,11 +524,11 @@ export function Sidebar() {
           style={{
             display:       'flex',
             flexDirection: 'column',
-            alignItems:    expanded ? 'stretch' : 'center',
+            alignItems:    'center',
             gap:           8,
             width:         '100%',
             padding:       expanded ? '0 8px' : '0',
-            transition:    'padding 0.22s ease',
+            transition:    `padding ${TX}`,
           }}
         >
           {/* Bell */}

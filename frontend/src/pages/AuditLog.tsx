@@ -75,6 +75,27 @@ function isSystem(action: string) {
   return action.startsWith('file_') || action.startsWith('ai_');
 }
 
+const ACTION_OPTS = ['All actions', 'User actions', 'System actions', 'Incident status', 'File uploads', 'AI summaries'];
+const TIME_OPTS   = ['All time', 'Last 24 hours', 'Last 7 days', 'Last 30 days'];
+const TIME_HOURS: Record<string, number> = {
+  'All time': 0, 'Last 24 hours': 24, 'Last 7 days': 168, 'Last 30 days': 720,
+};
+
+function matchesAction(action: string, filter: string) {
+  if (filter === 'All actions')     return true;
+  if (filter === 'User actions')    return !isSystem(action);
+  if (filter === 'System actions')  return isSystem(action);
+  if (filter === 'Incident status') return action.startsWith('incident_status');
+  if (filter === 'File uploads')    return action.startsWith('file_');
+  if (filter === 'AI summaries')    return action.startsWith('ai_');
+  return true;
+}
+
+function withinWindow(iso: string, hours: number) {
+  if (hours === 0) return true;
+  return Date.now() - new Date(iso).getTime() <= hours * 3_600_000;
+}
+
 function formatTime(iso: string) {
   return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 }
@@ -93,6 +114,8 @@ export function AuditLog() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
   const [search, setSearch] = useState('');
+  const [actionFilter, setActionFilter] = useState('All actions');
+  const [timeFilter, setTimeFilter] = useState('All time');
 
   const load = () => {
     setLoading(true); setError('');
@@ -105,11 +128,15 @@ export function AuditLog() {
   useEffect(() => { load(); }, []);
 
   const filtered = entries.filter((e) => {
-    if (!search) return true;
-    const q = search.toLowerCase();
-    return e.action.toLowerCase().includes(q) ||
-           (e.details ?? '').toLowerCase().includes(q) ||
-           (e.target_type ?? '').toLowerCase().includes(q);
+    if (!matchesAction(e.action, actionFilter)) return false;
+    if (!withinWindow(e.created_at, TIME_HOURS[timeFilter])) return false;
+    if (search) {
+      const q = search.toLowerCase();
+      return e.action.toLowerCase().includes(q) ||
+             (e.details ?? '').toLowerCase().includes(q) ||
+             (e.target_type ?? '').toLowerCase().includes(q);
+    }
+    return true;
   });
 
   const total = entries.length;
@@ -126,7 +153,11 @@ export function AuditLog() {
           eyebrow="Audit log · append-only"
           title="Audit log"
           subtitle="A chronological record of every action LogLens performed or a user took. Useful for compliance reviews and post-incident reconstruction."
-          right={<><PillFilter>All actions</PillFilter><PillFilter>Last 24 hours</PillFilter><UserChip /></>}
+          right={<>
+            <PillFilter options={ACTION_OPTS} value={actionFilter} onChange={setActionFilter}>All actions</PillFilter>
+            <PillFilter options={TIME_OPTS}   value={timeFilter}   onChange={setTimeFilter}>All time</PillFilter>
+            <UserChip />
+          </>}
         />
       </div>
 
@@ -176,7 +207,7 @@ export function AuditLog() {
         : error ? <ErrorState message={error} onRetry={load} />
         : filtered.length === 0 ? (
           <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--color-text-dim)', fontSize: 13 }}>
-            {search ? 'No events match your search.' : 'No audit events yet.'}
+            {entries.length === 0 ? 'No audit events yet.' : 'No events match the current filters.'}
           </div>
         ) : filtered.map((e) => {
           const sys = isSystem(e.action);

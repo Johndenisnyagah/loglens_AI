@@ -91,6 +91,15 @@ const STYLES = `
 
 type FilterChip = 'all' | 'needs_review' | 'approved';
 
+const SEV_OPTS  = ['All severities', 'Critical', 'High', 'Medium', 'Low'];
+const TIME_OPTS = ['All time', 'Last 24 hours', 'Last 7 days', 'Last 30 days'];
+const TIME_HOURS: Record<string, number> = {
+  'All time':      0,
+  'Last 24 hours': 24,
+  'Last 7 days':   168,
+  'Last 30 days':  720,
+};
+
 const sevColor = (s: string) =>
   s === 'critical' ? 'var(--color-danger)'
 : s === 'high'     ? 'var(--color-info)'
@@ -120,6 +129,8 @@ export function Incidents() {
   const navigate = useNavigate();
   const [list, setList] = useState<Incident[]>([]);
   const [filter, setFilter] = useState<FilterChip>('all');
+  const [sevFilter, setSevFilter] = useState('All severities');
+  const [timeFilter, setTimeFilter] = useState('All time');
   const [selectedId, setSelectedId] = useState<number | null>(null);
   const [detail, setDetail] = useState<IncidentDetail | null>(null);
   const [loadingList, setLoadingList] = useState(true);
@@ -127,18 +138,24 @@ export function Incidents() {
   const [error, setError] = useState('');
   const [updating, setUpdating] = useState(false);
 
-  const loadList = () => {
+  const loadList = (sev = sevFilter, time = timeFilter) => {
     setLoadingList(true); setError('');
-    getIncidents()
+    getIncidents({
+      severity: sev === 'All severities' ? undefined : sev.toLowerCase(),
+      hours:    TIME_HOURS[time],
+    })
       .then((items) => {
         setList(items);
-        if (items.length > 0) setSelectedId(items[0].id);
+        setSelectedId((prev) => items.find((i) => i.id === prev) ? prev : items[0]?.id ?? null);
       })
       .catch(() => setError('Could not load incidents.'))
       .finally(() => setLoadingList(false));
   };
 
-  useEffect(() => { loadList(); }, []);
+  useEffect(() => { loadList(); }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  function handleSev(v: string) { setSevFilter(v); loadList(v, timeFilter); }
+  function handleTime(v: string) { setTimeFilter(v); loadList(sevFilter, v); }
 
   useEffect(() => {
     if (selectedId === null) return;
@@ -174,7 +191,11 @@ export function Incidents() {
           eyebrow={`AI summaries · ${list.length} incidents · model GPT-4o-mini`}
           title="AI summaries"
           subtitle="Plain-language explanations and remediation guidance for incidents flagged by LogLens detection rules."
-          right={<><PillFilter>All severities</PillFilter><PillFilter>Last 24 hours</PillFilter><UserChip /></>}
+          right={<>
+            <PillFilter options={SEV_OPTS}  value={sevFilter}  onChange={handleSev}>All severities</PillFilter>
+            <PillFilter options={TIME_OPTS} value={timeFilter} onChange={handleTime}>All time</PillFilter>
+            <UserChip />
+          </>}
         />
       </div>
 

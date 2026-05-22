@@ -78,6 +78,17 @@ const STEPS = [
 const MAX_SIZE = 10 * 1024 * 1024;
 const ALLOWED = ['.log', '.txt'];
 
+const STATUS_OPTS = ['All statuses', 'Analyzed', 'Processing', 'Uploaded', 'Failed'];
+const TIME_OPTS   = ['All time', 'Last 24 hours', 'Last 7 days', 'Last 30 days'];
+const TIME_HOURS: Record<string, number> = {
+  'All time': 0, 'Last 24 hours': 24, 'Last 7 days': 168, 'Last 30 days': 720,
+};
+
+function withinWindow(iso: string, hours: number) {
+  if (hours === 0) return true;
+  return Date.now() - new Date(iso).getTime() <= hours * 3_600_000;
+}
+
 type Phase = 'idle' | 'uploading' | 'done' | 'error';
 
 const statusColor: Record<string, string> = {
@@ -102,6 +113,8 @@ export function UploadLogs() {
   const [logs, setLogs] = useState<LogFile[]>([]);
   const [loadingList, setLoadingList] = useState(true);
   const [listError, setListError] = useState('');
+  const [statusFilter, setStatusFilter] = useState('All statuses');
+  const [timeFilter, setTimeFilter] = useState('All time');
   const [phase, setPhase] = useState<Phase>('idle');
   const [currentStep, setCurrentStep] = useState(-1);
   const [errorMsg, setErrorMsg] = useState('');
@@ -153,16 +166,26 @@ export function UploadLogs() {
     e.preventDefault(); setDragging(false); handleFiles(e.dataTransfer.files);
   }, [handleFiles]);
 
+  const visibleLogs = logs.filter((f) => {
+    const statusOk = statusFilter === 'All statuses' || f.status === statusFilter.toLowerCase();
+    const timeOk   = withinWindow(f.uploaded_at, TIME_HOURS[timeFilter]);
+    return statusOk && timeOk;
+  });
+
   return (
     <div className="logs-page">
       <style>{STYLES}</style>
 
       <div className="logs-hd">
         <PageHead
-          eyebrow={`Logs · ${logs.length} files`}
+          eyebrow={`Logs · ${visibleLogs.length} of ${logs.length} files`}
           title="Logs"
           subtitle="Upload Linux SSH authentication logs and review LogLens's analysis history per file."
-          right={<><PillFilter>All hosts</PillFilter><PillFilter>Last 30 days</PillFilter><UserChip /></>}
+          right={<>
+            <PillFilter options={STATUS_OPTS} value={statusFilter} onChange={setStatusFilter}>All statuses</PillFilter>
+            <PillFilter options={TIME_OPTS}   value={timeFilter}   onChange={setTimeFilter}>All time</PillFilter>
+            <UserChip />
+          </>}
         />
       </div>
 
@@ -232,9 +255,9 @@ export function UploadLogs() {
       <div className="tbl-wrap">
         {loadingList ? <LoadingState message="Loading logs…" />
         : listError ? <ErrorState message={listError} onRetry={loadList} />
-        : logs.length === 0 ? (
+        : visibleLogs.length === 0 ? (
           <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--color-text-dim)', fontSize: 13 }}>
-            No log files yet. Upload one above to get started.
+            {logs.length === 0 ? 'No log files yet. Upload one above to get started.' : 'No files match the current filters.'}
           </div>
         ) : (
           <table className="tbl">
@@ -242,7 +265,7 @@ export function UploadLogs() {
               <tr><th>File</th><th>Type</th><th>Lines</th><th>Events</th><th>Status</th><th style={{ textAlign: 'right' }}>Uploaded</th></tr>
             </thead>
             <tbody>
-              {logs.map((f) => (
+              {visibleLogs.map((f) => (
                 <tr key={f.id}>
                   <td>
                     <div className="fname">
