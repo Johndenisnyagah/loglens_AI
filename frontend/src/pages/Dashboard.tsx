@@ -30,9 +30,9 @@ const STYLES = `
 .metric .label { font-size: 10px; letter-spacing: 0.16em; text-transform: uppercase; color: var(--color-text-dim); font-weight: 500; margin-bottom: 14px; }
 .metric .num-row { display: flex; align-items: baseline; gap: 12px; margin-bottom: 14px; }
 .metric .num { font-size: 36px; font-weight: 600; letter-spacing: -0.02em; line-height: 1; color: var(--color-text); font-variant-numeric: tabular-nums; }
-.metric .delta { font-size: 11px; color: var(--color-text-dim); letter-spacing: 0.04em; font-family: var(--font-mono); }
-.metric .delta.up   { color: var(--color-text-mid); }
-.metric .delta.down { color: var(--color-text-dim); }
+.metric .delta { font-size: 11px; letter-spacing: 0.04em; font-family: var(--font-mono); }
+.metric .delta.up   { color: var(--color-success); }
+.metric .delta.down { color: var(--color-danger); }
 .metric .bar { height: 3px; background: rgba(255,255,255,0.04); overflow: hidden; }
 .metric .bar > span { display: block; height: 100%; }
 
@@ -143,11 +143,22 @@ export function Dashboard() {
   if (loading) return <div className="dash-content"><style>{STYLES}</style><div className="dash-bd"><LoadingState message="Loading overview…" /></div></div>;
   if (error || !data) return <div className="dash-content"><style>{STYLES}</style><div className="dash-bd"><ErrorState message={error || 'No data.'} onRetry={() => load()} /></div></div>;
 
+  function fmtDelta(n: number, inverse = false) {
+    if (n === 0) return '';
+    const sign = n > 0 ? '+' : '';
+    return `${sign}${n} today`;
+  }
+  function deltaClass(n: number, inverse = false) {
+    if (n === 0) return '';
+    const positive = n > 0;
+    return (inverse ? !positive : positive) ? 'up' : 'down';
+  }
+
   const metrics = [
-    { label: 'Logs analyzed',       num: data.total_logs,          delta: '',           bg: 'rgba(181,186,196,0.5)', width: Math.min(100, data.total_logs * 4) },
-    { label: 'Incidents detected',  num: data.total_incidents,     delta: '',           bg: 'rgba(181,186,196,0.5)', width: Math.min(100, data.total_incidents * 2) },
-    { label: 'High-risk incidents', num: data.high_risk_incidents, delta: '',           bg: 'rgba(239,91,107,0.65)', width: Math.min(100, data.high_risk_incidents * 6) },
-    { label: 'Needs human review',  num: data.needs_review_count,  delta: '',           bg: 'rgba(249,229,71,0.55)', width: Math.min(100, data.needs_review_count * 5) },
+    { label: 'Logs analyzed',       num: data.total_logs,          delta: fmtDelta(data.delta_logs),         cls: deltaClass(data.delta_logs),         bg: 'rgba(181,186,196,0.5)', width: Math.min(100, data.total_logs * 4) },
+    { label: 'Incidents detected',  num: data.total_incidents,     delta: fmtDelta(data.delta_incidents),    cls: deltaClass(data.delta_incidents),    bg: 'rgba(181,186,196,0.5)', width: Math.min(100, data.total_incidents * 2) },
+    { label: 'High-risk incidents', num: data.high_risk_incidents, delta: fmtDelta(data.delta_high_risk),   cls: deltaClass(data.delta_high_risk, true),  bg: 'rgba(239,91,107,0.65)', width: Math.min(100, data.high_risk_incidents * 6) },
+    { label: 'Needs human review',  num: data.needs_review_count,  delta: fmtDelta(data.delta_needs_review), cls: deltaClass(data.delta_needs_review, true), bg: 'rgba(249,229,71,0.55)', width: Math.min(100, data.needs_review_count * 5) },
   ];
 
   const subtitle = `Showing activity across ${hostLabel === 'All hosts' ? 'all monitored hosts' : hostLabel} · ${timeRange.toLowerCase()}.`;
@@ -191,7 +202,7 @@ export function Dashboard() {
             <div className="label">{m.label}</div>
             <div className="num-row">
               <div className="num">{m.num}</div>
-              {m.delta && <div className="delta up">{m.delta}</div>}
+              {m.delta && <div className={`delta ${m.cls}`}>{m.delta}</div>}
             </div>
             <div className="bar"><span style={{ width: `${m.width}%`, background: m.bg }} /></div>
           </div>

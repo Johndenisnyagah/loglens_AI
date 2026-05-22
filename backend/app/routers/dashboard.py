@@ -84,6 +84,24 @@ def get_dashboard_summary(
             ai_insight = ai_sum.summary
             break
 
+    # Deltas — count added in the last 24 h (independent of current filter)
+    day_ago = datetime.utcnow() - timedelta(hours=24)
+    delta_logs        = db.query(models.LogFile).filter(models.LogFile.uploaded_at >= day_ago).count()
+    delta_incidents   = db.query(models.Incident).filter(models.Incident.created_at >= day_ago).count()
+    delta_high_risk   = (
+        db.query(models.Incident)
+        .filter(models.Incident.severity.in_(["high", "critical"]),
+                models.Incident.created_at >= day_ago)
+        .count()
+    )
+    delta_needs_review = (
+        db.query(models.Incident)
+        .filter(models.Incident.needs_human_review == True,  # noqa: E712
+                models.Incident.status == "open",
+                models.Incident.created_at >= day_ago)
+        .count()
+    )
+
     return DashboardSummaryResponse(
         total_logs=total_logs,
         total_incidents=total_incidents,
@@ -92,4 +110,8 @@ def get_dashboard_summary(
         recent_incidents=[IncidentResponse.model_validate(i) for i in recent_incidents],
         top_suspicious_ips=suspicious_ips,
         ai_insight=ai_insight,
+        delta_logs=delta_logs,
+        delta_incidents=delta_incidents,
+        delta_high_risk=delta_high_risk,
+        delta_needs_review=delta_needs_review,
     )

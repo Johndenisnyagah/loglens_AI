@@ -91,6 +91,11 @@ class DashboardSummaryResponse(BaseModel):
     recent_incidents: list[IncidentResponse]
     top_suspicious_ips: list[SuspiciousIP]
     ai_insight: Optional[str]
+    # "today" deltas — count added in last 24 h regardless of active filter
+    delta_logs: int = 0
+    delta_incidents: int = 0
+    delta_high_risk: int = 0
+    delta_needs_review: int = 0
 
 
 # ── Status update ─────────────────────────────────────────────────────────────

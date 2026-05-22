@@ -63,6 +63,10 @@ export interface DashboardSummary {
   recent_incidents: Incident[];
   top_suspicious_ips: SuspiciousIP[];
   ai_insight: string | null;
+  delta_logs: number;
+  delta_incidents: number;
+  delta_high_risk: number;
+  delta_needs_review: number;
 }
 
 export interface UploadResult {

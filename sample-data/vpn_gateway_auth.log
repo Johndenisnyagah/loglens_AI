@@ -1,0 +1,22 @@
+Jun 15 10:05:33 vpn-gw sshd[6101]: Failed password for vpnuser from 5.188.206.26 port 34500 ssh2
+Jun 15 10:05:41 vpn-gw sshd[6102]: Failed password for vpnuser from 5.188.206.26 port 34501 ssh2
+Jun 15 10:05:49 vpn-gw sshd[6103]: Failed password for vpnadmin from 5.188.206.26 port 34502 ssh2
+Jun 15 10:05:57 vpn-gw sshd[6104]: Failed password for admin from 5.188.206.26 port 34503 ssh2
+Jun 15 10:06:05 vpn-gw sshd[6105]: Failed password for admin from 5.188.206.26 port 34504 ssh2
+Jun 15 10:06:13 vpn-gw sshd[6106]: Failed password for root from 5.188.206.26 port 34505 ssh2
+Jun 15 10:06:21 vpn-gw sshd[6107]: Failed password for root from 5.188.206.26 port 34506 ssh2
+Jun 15 10:06:29 vpn-gw sshd[6108]: Failed password for root from 5.188.206.26 port 34507 ssh2
+Jun 15 11:22:08 vpn-gw sshd[6300]: Invalid user cisco from 193.32.162.44 port 60200
+Jun 15 11:22:16 vpn-gw sshd[6301]: Invalid user fortinet from 193.32.162.44 port 60201
+Jun 15 11:22:24 vpn-gw sshd[6302]: Invalid user paloalto from 193.32.162.44 port 60202
+Jun 15 11:22:32 vpn-gw sshd[6303]: Invalid user netadmin from 193.32.162.44 port 60203
+Jun 15 11:22:40 vpn-gw sshd[6304]: Invalid user sysadmin from 193.32.162.44 port 60204
+Jun 15 11:22:48 vpn-gw sshd[6305]: Invalid user firewall from 193.32.162.44 port 60205
+Jun 15 11:22:56 vpn-gw sshd[6306]: Invalid user gateway from 193.32.162.44 port 60206
+Jun 15 12:00:00 vpn-gw sshd[6500]: Accepted publickey for netops from 10.0.0.20 port 22400 ssh2
+Jun 15 13:14:01 vpn-gw sshd[6700]: Failed password for admin from 141.98.10.122 port 58000 ssh2
+Jun 15 13:14:09 vpn-gw sshd[6701]: Failed password for admin from 141.98.10.122 port 58001 ssh2
+Jun 15 13:14:17 vpn-gw sshd[6702]: Failed password for admin from 141.98.10.122 port 58002 ssh2
+Jun 15 13:14:25 vpn-gw sshd[6703]: Failed password for admin from 141.98.10.122 port 58003 ssh2
+Jun 15 13:14:33 vpn-gw sshd[6704]: Failed password for admin from 141.98.10.122 port 58004 ssh2
+Jun 15 13:14:50 vpn-gw sshd[6705]: Accepted password for admin from 141.98.10.122 port 58005 ssh2

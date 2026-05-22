@@ -13,9 +13,18 @@ export async function uploadLogFile(
   const formData = new FormData();
   formData.append('file', file);
 
+  const model = (() => {
+    try { return JSON.parse(localStorage.getItem('ll-ai-model') ?? '"gpt-4o-mini"'); } catch { return 'gpt-4o-mini'; }
+  })();
+  const autoSummary = (() => {
+    try { return JSON.parse(localStorage.getItem('ll-auto-summary') ?? 'true'); } catch { return true; }
+  })();
+
   onProgress?.(1);
 
-  const { data } = await api.post<UploadResult>('/api/logs/upload', formData, {
+  const { data } = await api.post<UploadResult>(
+    `/api/logs/upload?model=${encodeURIComponent(model)}&auto_summary=${autoSummary}`,
+    formData, {
     headers: { 'Content-Type': 'multipart/form-data' },
   });
 

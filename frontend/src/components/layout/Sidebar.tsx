@@ -147,13 +147,14 @@ const COLLAPSED_W = 69;
 const EXPANDED_W  = 210;
 
 const STYLES = `
-/* ── pulsing badge ─────────────────────────────── */
-.notif-badge {
-  animation: badge-glow 2.2s ease-in-out infinite;
+
+/* ── notification dot ──────────────────────────── */
+.notif-dot-pulse {
+  animation: dot-pulse 2.4s ease-in-out infinite;
 }
-@keyframes badge-glow {
-  0%,100% { box-shadow: 0 0 0 0 rgba(249,229,71,0.75); }
-  50%      { box-shadow: 0 0 0 5px rgba(249,229,71,0); }
+@keyframes dot-pulse {
+  0%,100% { box-shadow: 0 0 0 0 rgba(249,229,71,0.7); }
+  50%      { box-shadow: 0 0 0 4px rgba(249,229,71,0); }
 }
 
 /* ── slide-in panel ────────────────────────────── */
@@ -194,9 +195,6 @@ const STYLES = `
 .notif-count {
   font-size: 10px;
   font-weight: 700;
-  padding: 2px 6px;
-  border-radius: 10px;
-  background: rgba(249,229,71,0.15);
   color: var(--color-warn);
   letter-spacing: 0.06em;
 }
@@ -481,7 +479,7 @@ export function Sidebar() {
             onMouseEnter={(e) => { e.currentTarget.style.color = 'var(--color-text)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = 'var(--color-text-dim)'; }}
           >
-            <CollapseIcon size={16} />
+            <CollapseIcon size={22} />
           </button>
         </div>
 
@@ -545,32 +543,18 @@ export function Sidebar() {
             onMouseEnter={(e) => { if (!unread) e.currentTarget.style.color = 'var(--color-text)'; }}
             onMouseLeave={(e) => { e.currentTarget.style.color = unread > 0 ? 'var(--color-warn)' : 'var(--color-text-dim)'; }}
           >
-            {/* Badge anchored to icon, not the full button */}
             <span style={{ position: 'relative', flexShrink: 0, display: 'flex', alignItems: 'center' }}>
               <Bell size={20} strokeWidth={1.8} />
               {unread > 0 && (
-                <span
-                  className="notif-badge"
-                  style={{
-                    position:        'absolute',
-                    top:             -2,
-                    right:           -2,
-                    width:           17,
-                    height:          17,
-                    borderRadius:    '50%',
-                    backgroundColor: 'var(--color-warn)',
-                    color:           '#1a1000',
-                    fontSize:        9,
-                    fontWeight:      700,
-                    display:         'flex',
-                    alignItems:      'center',
-                    justifyContent:  'center',
-                    fontFamily:      'var(--font-sans)',
-                    lineHeight:      1,
-                  }}
-                >
-                  {unread}
-                </span>
+                <span className="notif-dot-pulse" style={{
+                  position:        'absolute',
+                  top:             -2,
+                  right:           -2,
+                  width:           7,
+                  height:          7,
+                  borderRadius:    '50%',
+                  backgroundColor: 'var(--color-warn)',
+                }} />
               )}
             </span>
             <span style={labelStyle}>

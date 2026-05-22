@@ -1,5 +1,6 @@
 import { useState } from 'react';
-import { useLocation } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
+import { api } from '../api/client';
 import { Save, Sliders, Bell, Shield, Database, Users, User } from 'lucide-react';
 import { PageHead } from '../components/ui/PageHead';
 import { UserChip } from '../components/ui/UserChip';
@@ -79,22 +80,69 @@ const TABS: { id: Tab; icon: React.ElementType; label: string }[] = [
 
 export function Settings() {
   const location = useLocation();
+  const navigate  = useNavigate();
   const [tab, setTab] = useState<Tab>(
     (location.state as { tab?: Tab } | null)?.tab ?? 'profile'
   );
   const { profile, setProfile } = useProfile();
+  const [resetConfirm, setResetConfirm] = useState(false);
+  const [resetting, setResetting]       = useState(false);
+
+  async function handleReset() {
+    if (!resetConfirm) { setResetConfirm(true); return; }
+    setResetting(true);
+    try {
+      await api.delete('/api/admin/reset');
+      setResetConfirm(false);
+      navigate('/');
+    } finally { setResetting(false); }
+  }
   const [draftName,     setDraftName]     = useState(profile.name);
   const [draftInitials, setDraftInitials] = useState(profile.initials);
   const [draftEmail,    setDraftEmail]    = useState(profile.email);
   const [draftRole,     setDraftRole]     = useState(profile.role);
-  const [wsName, setWsName] = useState('acme-security');
-  const [retention, setRetention] = useState('90');
-  const [aiMode, setAiMode] = useState<'explain' | 'detect'>('explain');
-  const [autoSummary, setAutoSummary] = useState(true);
-  const [emailAlerts, setEmailAlerts] = useState(true);
-  const [pagerDuty, setPagerDuty] = useState(false);
-  const [requireApproval, setRequireApproval] = useState(true);
+
+  // Persist settings in localStorage
+  function ls<T>(key: string, def: T): T {
+    try { const v = localStorage.getItem(key); return v !== null ? JSON.parse(v) : def; } catch { return def; }
+  }
+  function lsSet(key: string, val: unknown) { try { localStorage.setItem(key, JSON.stringify(val)); } catch {} }
+
+  const [wsName,         setWsName]         = useState(() => ls('ll-ws-name', 'acme-security'));
+  const [retention,      setRetention]      = useState(() => ls('ll-retention', '90'));
+  const [aiMode,         setAiMode]         = useState<'explain' | 'detect'>(() => ls('ll-ai-mode', 'explain'));
+  const [autoSummary,    setAutoSummary]    = useState(() => ls('ll-auto-summary', true));
+  const [emailAlerts,    setEmailAlerts]    = useState(() => ls('ll-email-alerts', true));
+  const [pagerDuty,      setPagerDuty]      = useState(() => ls('ll-pagerduty', false));
+  const [requireApproval,setRequireApproval]= useState(() => ls('ll-require-approval', true));
   const [saved, setSaved] = useState(false);
+  const [deleteConfirm, setDeleteConfirm] = useState(false);
+  const [deleting, setDeleting]           = useState(false);
+
+  function persist<T>(key: string, setter: (v: T) => void) {
+    return (v: T) => { setter(v); lsSet(key, v); };
+  }
+
+  const setWsNameP         = persist('ll-ws-name', setWsName);
+  const setRetentionP      = persist('ll-retention', setRetention);
+  const setAiModeP         = persist<'explain' | 'detect'>('ll-ai-mode', setAiMode);
+  const setAutoSummaryP    = persist('ll-auto-summary', setAutoSummary);
+  const setEmailAlertsP    = persist('ll-email-alerts', setEmailAlerts);
+  const setPagerDutyP      = persist('ll-pagerduty', setPagerDuty);
+  const setRequireApprovalP= persist('ll-require-approval', setRequireApproval);
+
+  async function handleDelete() {
+    if (!deleteConfirm) { setDeleteConfirm(true); return; }
+    setDeleting(true);
+    try {
+      await api.delete('/api/admin/reset');
+      // Clear all localStorage
+      ['ll-ws-name','ll-retention','ll-ai-mode','ll-auto-summary','ll-email-alerts',
+       'll-pagerduty','ll-require-approval','loglens-profile','loglens-theme',
+       'loglens-seen-incident-ids'].forEach(k => localStorage.removeItem(k));
+      navigate('/');
+    } finally { setDeleting(false); }
+  }
 
   function save() {
     setSaved(true);
@@ -244,7 +292,7 @@ export function Settings() {
                   <div className="label">Workspace slug</div>
                   <div className="hint">Used as the org name in routes and audit logs. Lowercase, dashes only.</div>
                 </div>
-                <input className="in mono" value={wsName} onChange={(e) => setWsName(e.target.value)} />
+                <input className="in mono" value={wsName} onChange={(e) => setWsNameP(e.target.value)} />
               </div>
 
               <div className="field">
@@ -252,7 +300,7 @@ export function Settings() {
                   <div className="label">Log retention</div>
                   <div className="hint">Raw uploads and parsed events are deleted after this many days. Incidents and audit log persist.</div>
                 </div>
-                <select className="in" value={retention} onChange={(e) => setRetention(e.target.value)}>
+                <select className="in" value={retention} onChange={(e) => setRetentionP(e.target.value)}>
                   <option value="30">30 days</option>
                   <option value="60">60 days</option>
                   <option value="90">90 days</option>
@@ -297,8 +345,8 @@ export function Settings() {
                   <div className="hint"><strong style={{ color: 'var(--color-text)' }}>Explain</strong> generates summaries from rule-detected incidents only. <strong style={{ color: 'var(--color-text)' }}>Detect</strong> additionally lets the model raise its own incidents (not recommended in production).</div>
                 </div>
                 <div className="seg">
-                  <button className={aiMode === 'explain' ? 'active' : ''} onClick={() => setAiMode('explain')}>Explain</button>
-                  <button className={aiMode === 'detect' ? 'active' : ''} onClick={() => setAiMode('detect')}>Detect</button>
+                  <button className={aiMode === 'explain' ? 'active' : ''} onClick={() => setAiModeP('explain')}>Explain</button>
+                  <button className={aiMode === 'detect' ? 'active' : ''} onClick={() => setAiModeP('detect')}>Detect</button>
                 </div>
               </div>
 
@@ -307,7 +355,7 @@ export function Settings() {
                   <div className="label">Auto-generate summary</div>
                   <div className="hint">Run the AI summary as soon as an incident is created. Disable to save tokens.</div>
                 </div>
-                <div className={`toggle ${autoSummary ? 'on' : ''}`} onClick={() => setAutoSummary((v) => !v)}><div className="knob" /></div>
+                <div className={`toggle ${autoSummary ? 'on' : ''}`} onClick={() => setAutoSummaryP(!autoSummary)}><div className="knob" /></div>
               </div>
 
               <div className="field">
@@ -315,7 +363,7 @@ export function Settings() {
                   <div className="label">Require approval for actions</div>
                   <div className="hint">AI-recommended actions cannot be executed automatically — a human must click approve.</div>
                 </div>
-                <div className={`toggle ${requireApproval ? 'on' : ''}`} onClick={() => setRequireApproval((v) => !v)}><div className="knob" /></div>
+                <div className={`toggle ${requireApproval ? 'on' : ''}`} onClick={() => setRequireApprovalP(!requireApproval)}><div className="knob" /></div>
               </div>
 
               <div className="field">
@@ -323,7 +371,7 @@ export function Settings() {
                   <div className="label">Default model</div>
                   <div className="hint">Used when an environment variable isn't set. Falls back to mock summary in dev.</div>
                 </div>
-                <select className="in" defaultValue="gpt-4o-mini">
+                <select className="in" value={ls('ll-ai-model', 'gpt-4o-mini')} onChange={(e) => lsSet('ll-ai-model', e.target.value)}>
                   <option value="gpt-4o-mini">gpt-4o-mini</option>
                   <option value="gpt-4o">gpt-4o</option>
                   <option value="claude-haiku-4-5">claude-haiku-4-5</option>
@@ -352,7 +400,7 @@ export function Settings() {
                   <div className="label">Email alerts</div>
                   <div className="hint">Sent to the on-call rotation address for critical and high-severity incidents.</div>
                 </div>
-                <div className={`toggle ${emailAlerts ? 'on' : ''}`} onClick={() => setEmailAlerts((v) => !v)}><div className="knob" /></div>
+                <div className={`toggle ${emailAlerts ? 'on' : ''}`} onClick={() => setEmailAlertsP(!emailAlerts)}><div className="knob" /></div>
               </div>
 
               <div className="field">
@@ -360,7 +408,7 @@ export function Settings() {
                   <div className="label">PagerDuty integration</div>
                   <div className="hint">Create a PagerDuty incident for any LogLens incident with risk ≥ 80.</div>
                 </div>
-                <div className={`toggle ${pagerDuty ? 'on' : ''}`} onClick={() => setPagerDuty((v) => !v)}><div className="knob" /></div>
+                <div className={`toggle ${pagerDuty ? 'on' : ''}`} onClick={() => setPagerDutyP(!pagerDuty)}><div className="knob" /></div>
               </div>
 
               <div className="field">
@@ -437,13 +485,33 @@ export function Settings() {
                   <p>Irreversible actions. Read carefully before clicking.</p>
                 </div>
               </div>
-              <div className="field">
+              <div className="field" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>
                 <div><div className="label">Reset analyzer database</div><div className="hint">Removes all uploaded logs, events, incidents and AI summaries. Audit log is preserved.</div></div>
-                <button className="btn danger">Reset analyzer</button>
+                {resetConfirm ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 12, color: 'var(--color-danger)', fontWeight: 500 }}>This cannot be undone. Are you sure?</span>
+                    <button className="btn danger" disabled={resetting} onClick={handleReset}>
+                      {resetting ? 'Resetting…' : 'Yes, reset everything'}
+                    </button>
+                    <button className="btn" onClick={() => setResetConfirm(false)}>Cancel</button>
+                  </div>
+                ) : (
+                  <button className="btn danger" onClick={handleReset}>Reset analyzer</button>
+                )}
               </div>
-              <div className="field">
-                <div><div className="label">Delete workspace</div><div className="hint">Permanently deletes <code>{wsName}</code> and all associated data. Cannot be undone.</div></div>
-                <button className="btn danger">Delete workspace</button>
+              <div className="field" style={{ flexDirection: 'column', alignItems: 'flex-start', gap: 12 }}>
+                <div><div className="label">Delete workspace</div><div className="hint">Permanently deletes <code>{wsName}</code> and all associated data including your profile and settings. Cannot be undone.</div></div>
+                {deleteConfirm ? (
+                  <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <span style={{ fontSize: 12, color: 'var(--color-danger)', fontWeight: 500 }}>All data and settings will be wiped. Sure?</span>
+                    <button className="btn danger" disabled={deleting} onClick={handleDelete}>
+                      {deleting ? 'Deleting…' : 'Yes, delete workspace'}
+                    </button>
+                    <button className="btn" onClick={() => setDeleteConfirm(false)}>Cancel</button>
+                  </div>
+                ) : (
+                  <button className="btn danger" onClick={handleDelete}>Delete workspace</button>
+                )}
               </div>
             </div>
           )}

@@ -117,6 +117,26 @@ export function AuditLog() {
   const [actionFilter, setActionFilter] = useState('All actions');
   const [timeFilter, setTimeFilter] = useState('All time');
 
+  function exportCSV() {
+    const header = ['id', 'timestamp', 'action', 'target_type', 'target_id', 'details'];
+    const rows = filtered.map((e) => [
+      e.id,
+      new Date(e.created_at).toISOString(),
+      e.action,
+      e.target_type ?? '',
+      e.target_id ?? '',
+      `"${(e.details ?? '').replace(/"/g, '""')}"`,
+    ]);
+    const csv = [header.join(','), ...rows.map((r) => r.join(','))].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `loglens-audit-${new Date().toISOString().slice(0, 10)}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+  }
+
   const load = () => {
     setLoading(true); setError('');
     getAuditLog({ limit: 200 })
@@ -197,7 +217,7 @@ export function AuditLog() {
           />
         </div>
         <button className="btn"><Filter size={12} strokeWidth={2} /> Filter</button>
-        <button className="btn"><Download size={12} strokeWidth={2} /> Export CSV</button>
+        <button className="btn" onClick={exportCSV}><Download size={12} strokeWidth={2} /> Export CSV</button>
         <button className="btn icon" onClick={load} title="Refresh"><RefreshCw size={12} strokeWidth={2} /></button>
       </div>
 

@@ -1,0 +1,23 @@
+Jun 21 22:00:04 prod-api sshd[8101]: Failed password for api from 198.199.119.200 port 43100 ssh2
+Jun 21 22:00:12 prod-api sshd[8102]: Failed password for api from 198.199.119.200 port 43101 ssh2
+Jun 21 22:00:20 prod-api sshd[8103]: Failed password for api from 198.199.119.200 port 43102 ssh2
+Jun 21 22:00:28 prod-api sshd[8104]: Failed password for admin from 198.199.119.200 port 43103 ssh2
+Jun 21 22:00:36 prod-api sshd[8105]: Failed password for admin from 198.199.119.200 port 43104 ssh2
+Jun 21 22:00:44 prod-api sshd[8106]: Failed password for admin from 198.199.119.200 port 43105 ssh2
+Jun 21 22:00:52 prod-api sshd[8107]: Failed password for root from 198.199.119.200 port 43106 ssh2
+Jun 21 22:01:00 prod-api sshd[8108]: Failed password for root from 198.199.119.200 port 43107 ssh2
+Jun 21 22:01:08 prod-api sshd[8109]: Failed password for root from 198.199.119.200 port 43108 ssh2
+Jun 21 22:01:16 prod-api sshd[8110]: Failed password for root from 198.199.119.200 port 43109 ssh2
+Jun 21 22:01:24 prod-api sshd[8111]: Failed password for root from 198.199.119.200 port 43110 ssh2
+Jun 21 22:01:32 prod-api sshd[8112]: Failed password for root from 198.199.119.200 port 43111 ssh2
+Jun 21 23:12:55 prod-api sshd[8300]: Invalid user node from 45.95.168.211 port 57300
+Jun 21 23:13:03 prod-api sshd[8301]: Invalid user python from 45.95.168.211 port 57301
+Jun 21 23:13:11 prod-api sshd[8302]: Invalid user flask from 45.95.168.211 port 57302
+Jun 21 23:13:19 prod-api sshd[8303]: Invalid user django from 45.95.168.211 port 57303
+Jun 21 23:13:27 prod-api sshd[8304]: Invalid user express from 45.95.168.211 port 57304
+Jun 22 00:00:01 prod-api sshd[8500]: Accepted publickey for deploy from 10.0.0.50 port 22600 ssh2
+Jun 22 01:33:07 prod-api sshd[8700]: Failed password for admin from 185.220.101.47 port 64000 ssh2
+Jun 22 01:33:15 prod-api sshd[8701]: Failed password for admin from 185.220.101.47 port 64001 ssh2
+Jun 22 01:33:23 prod-api sshd[8702]: Failed password for admin from 185.220.101.47 port 64002 ssh2
+Jun 22 01:33:31 prod-api sshd[8703]: Failed password for admin from 185.220.101.47 port 64003 ssh2
+Jun 22 01:33:48 prod-api sshd[8704]: Accepted password for admin from 185.220.101.47 port 64004 ssh2

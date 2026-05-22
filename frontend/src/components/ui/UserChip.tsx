@@ -253,13 +253,23 @@ export function UserChip({
 
   const [open,       setOpen]       = useState(false);
   const [view,       setView]       = useState<View>('main');
-  const [workspaces, setWorkspaces] = useState<Workspace[]>([
-    { id: 'AC', name: 'Acme Security' },
-    { id: 'LB', name: 'Labs sandbox' },
-    { id: 'CG', name: 'Contoso Gov demo' },
-  ]);
-  const [activeWs,   setActiveWs]   = useState('Acme Security');
-  const [org,        setOrg]        = useState(defaultOrg);
+  const [workspaces, setWorkspaces] = useState<Workspace[]>(() => {
+    try {
+      const raw = localStorage.getItem('ll-workspaces');
+      return raw ? JSON.parse(raw) : [
+        { id: 'AC', name: 'Acme Security' },
+        { id: 'LB', name: 'Labs sandbox' },
+        { id: 'CG', name: 'Contoso Gov demo' },
+      ];
+    } catch { return [{ id: 'AC', name: 'Acme Security' }]; }
+  });
+  const [activeWs,   setActiveWs]   = useState<string>(() => {
+    try { return localStorage.getItem('ll-active-ws') ?? 'Acme Security'; } catch { return 'Acme Security'; }
+  });
+  const [org,        setOrg]        = useState(() => {
+    const ws = localStorage.getItem('ll-active-ws') ?? 'Acme Security';
+    return localStorage.getItem('ll-ws-name') ?? ws.toLowerCase().replace(/\s+/g, '-');
+  });
   const [theme,      setTheme]      = useState<Theme>(() => {
     return (localStorage.getItem('loglens-theme') as Theme | null) ?? 'Dark';
   });
@@ -299,18 +309,33 @@ export function UserChip({
 
   function selectWs(wsName: string) {
     setActiveWs(wsName);
-    setOrg(wsName.toLowerCase().replace(/\s+/g, '-'));
+    const slug = wsName.toLowerCase().replace(/\s+/g, '-');
+    setOrg(slug);
     setAddingWs(false);
+    try {
+      localStorage.setItem('ll-active-ws', wsName);
+      localStorage.setItem('ll-ws-name', slug);
+    } catch {}
   }
 
   function addWorkspace() {
     const trimmed = newWsName.trim();
     if (!trimmed) return;
     const id = trimmed.slice(0, 2).toUpperCase();
-    setWorkspaces((prev) => [...prev, { id, name: trimmed }]);
+    const updated = [...workspaces, { id, name: trimmed }];
+    setWorkspaces(updated);
+    try { localStorage.setItem('ll-workspaces', JSON.stringify(updated)); } catch {}
     selectWs(trimmed);
     setNewWsName('');
     setAddingWs(false);
+  }
+
+  function deleteWorkspace(wsName: string) {
+    if (workspaces.length <= 1) return;
+    const updated = workspaces.filter((w) => w.name !== wsName);
+    setWorkspaces(updated);
+    try { localStorage.setItem('ll-workspaces', JSON.stringify(updated)); } catch {}
+    if (activeWs === wsName) selectWs(updated[0].name);
   }
 
   function handleSignOut() {
@@ -397,7 +422,16 @@ export function UserChip({
                   >
                     <div className="ws-icon">{ws.id}</div>
                     <div className="ws-name">{ws.name}</div>
-                    {activeWs === ws.name && <Check size={13} strokeWidth={2.5} className="check" />}
+                    {activeWs === ws.name
+                      ? <Check size={13} strokeWidth={2.5} className="check" />
+                      : workspaces.length > 1 && (
+                          <span
+                            onClick={(e) => { e.stopPropagation(); deleteWorkspace(ws.name); }}
+                            style={{ fontSize: 11, color: 'var(--color-text-faint)', marginLeft: 'auto', lineHeight: 1, padding: '0 2px' }}
+                            title="Remove workspace"
+                          >✕</span>
+                        )
+                    }
                   </button>
                 ))}
 

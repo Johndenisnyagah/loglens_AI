@@ -2,7 +2,7 @@ import os
 import re
 from typing import List
 
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile
+from fastapi import APIRouter, Depends, File, HTTPException, Query, UploadFile
 from sqlalchemy.orm import Session
 
 from app import models
@@ -39,7 +39,12 @@ def get_log_file(log_file_id: int, db: Session = Depends(get_db)):
 
 
 @router.post("/upload", response_model=UploadResult)
-async def upload_log_file(file: UploadFile = File(...), db: Session = Depends(get_db)):
+async def upload_log_file(
+    file: UploadFile = File(...),
+    model: str = Query("gpt-4o-mini", description="AI model for summary generation"),
+    auto_summary: bool = Query(True, description="Generate AI summary for each incident"),
+    db: Session = Depends(get_db),
+):
     # ── Validate extension ────────────────────────────────────────────────────
     original_name = file.filename or "unknown"
     ext = os.path.splitext(original_name)[-1].lower()
@@ -140,6 +145,8 @@ async def upload_log_file(file: UploadFile = File(...), db: Session = Depends(ge
                       f"Rule: {di.detection_rule}, severity: {di.severity}")
 
             # ── AI summary ────────────────────────────────────────────────────
+            if not auto_summary:
+                continue
             try:
                 summary_data = generate_ai_summary({
                     "title": di.title,
@@ -150,7 +157,7 @@ async def upload_log_file(file: UploadFile = File(...), db: Session = Depends(ge
                     "detection_rule": di.detection_rule,
                     "event_count": len(di.evidence_messages),
                     "evidence_lines": di.evidence_messages[:20],
-                })
+                }, model=model)
                 ai_summary = models.AISummary(
                     incident_id=incident.id,
                     summary=summary_data.summary,
