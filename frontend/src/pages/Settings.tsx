@@ -110,11 +110,14 @@ export function Settings() {
 
   const [wsName,         setWsName]         = useState(() => ls('ll-ws-name', 'acme-security'));
   const [retention,      setRetention]      = useState(() => ls('ll-retention', '90'));
+  const [timezone,       setTimezone]       = useState(() => ls('ll-timezone', 'UTC'));
   const [aiMode,         setAiMode]         = useState<'explain' | 'detect'>(() => ls('ll-ai-mode', 'explain'));
   const [autoSummary,    setAutoSummary]    = useState(() => ls('ll-auto-summary', true));
   const [emailAlerts,    setEmailAlerts]    = useState(() => ls('ll-email-alerts', true));
   const [pagerDuty,      setPagerDuty]      = useState(() => ls('ll-pagerduty', false));
   const [requireApproval,setRequireApproval]= useState(() => ls('ll-require-approval', true));
+  const [quietFrom,      setQuietFrom]      = useState(() => ls('ll-quiet-from', '22:00'));
+  const [quietTo,        setQuietTo]        = useState(() => ls('ll-quiet-to', '07:00'));
   const [saved, setSaved] = useState(false);
   const [deleteConfirm, setDeleteConfirm] = useState(false);
   const [deleting, setDeleting]           = useState(false);
@@ -125,11 +128,14 @@ export function Settings() {
 
   const setWsNameP         = persist('ll-ws-name', setWsName);
   const setRetentionP      = persist('ll-retention', setRetention);
+  const setTimezoneP       = persist('ll-timezone', setTimezone);
   const setAiModeP         = persist<'explain' | 'detect'>('ll-ai-mode', setAiMode);
   const setAutoSummaryP    = persist('ll-auto-summary', setAutoSummary);
   const setEmailAlertsP    = persist('ll-email-alerts', setEmailAlerts);
   const setPagerDutyP      = persist('ll-pagerduty', setPagerDuty);
   const setRequireApprovalP= persist('ll-require-approval', setRequireApproval);
+  const setQuietFromP      = persist('ll-quiet-from', setQuietFrom);
+  const setQuietToP        = persist('ll-quiet-to', setQuietTo);
 
   async function handleDelete() {
     if (!deleteConfirm) { setDeleteConfirm(true); return; }
@@ -137,9 +143,9 @@ export function Settings() {
     try {
       await api.delete('/api/admin/reset');
       // Clear all localStorage
-      ['ll-ws-name','ll-retention','ll-ai-mode','ll-auto-summary','ll-email-alerts',
-       'll-pagerduty','ll-require-approval','loglens-profile','loglens-theme',
-       'loglens-seen-incident-ids'].forEach(k => localStorage.removeItem(k));
+      ['ll-ws-name','ll-retention','ll-timezone','ll-ai-mode','ll-auto-summary','ll-email-alerts',
+       'll-pagerduty','ll-require-approval','ll-quiet-from','ll-quiet-to','ll-oncall',
+       'loglens-profile','loglens-theme','loglens-seen-incident-ids'].forEach(k => localStorage.removeItem(k));
       navigate('/');
     } finally { setDeleting(false); }
   }
@@ -314,7 +320,7 @@ export function Settings() {
                   <div className="label">Time zone</div>
                   <div className="hint">All timestamps in the UI use this zone. Logs are stored in UTC.</div>
                 </div>
-                <select className="in" defaultValue="UTC">
+                <select className="in" value={timezone} onChange={(e) => setTimezoneP(e.target.value)}>
                   <option>UTC</option>
                   <option>America/Los_Angeles</option>
                   <option>America/New_York</option>
@@ -417,9 +423,9 @@ export function Settings() {
                   <div className="hint">Low and medium incidents are batched into a daily digest during quiet hours.</div>
                 </div>
                 <div style={{ display: 'flex', gap: 8 }}>
-                  <input className="in mono" defaultValue="22:00" style={{ width: 100 }} />
+                  <input className="in mono" value={quietFrom} onChange={(e) => setQuietFromP(e.target.value)} style={{ width: 100 }} />
                   <span style={{ alignSelf: 'center', color: 'var(--color-text-dim)' }}>→</span>
-                  <input className="in mono" defaultValue="07:00" style={{ width: 100 }} />
+                  <input className="in mono" value={quietTo} onChange={(e) => setQuietToP(e.target.value)} style={{ width: 100 }} />
                 </div>
               </div>
 

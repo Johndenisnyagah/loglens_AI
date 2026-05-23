@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Filter, Download, RefreshCw } from 'lucide-react';
+import { Search, Download, RefreshCw } from 'lucide-react';
 import { getAuditLog } from '../api/audit';
 import type { AuditEntry } from '../types';
 import { LoadingState } from '../components/ui/LoadingState';
@@ -7,6 +7,7 @@ import { ErrorState } from '../components/ui/ErrorState';
 import { PageHead } from '../components/ui/PageHead';
 import { PillFilter } from '../components/ui/PillFilter';
 import { UserChip } from '../components/ui/UserChip';
+import { useProfile } from '../hooks/useProfile';
 
 const STYLES = `
 .audit-page { display: flex; flex-direction: column; min-height: 100%; }
@@ -110,6 +111,7 @@ function relTime(iso: string) {
 }
 
 export function AuditLog() {
+  const { profile } = useProfile();
   const [entries, setEntries] = useState<AuditEntry[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
@@ -216,7 +218,6 @@ export function AuditLog() {
             placeholder="Search action, target, or details…"
           />
         </div>
-        <button className="btn"><Filter size={12} strokeWidth={2} /> Filter</button>
         <button className="btn" onClick={exportCSV}><Download size={12} strokeWidth={2} /> Export CSV</button>
         <button className="btn icon" onClick={load} title="Refresh"><RefreshCw size={12} strokeWidth={2} /></button>
       </div>
@@ -236,8 +237,8 @@ export function AuditLog() {
             <div key={e.id} className="event-row">
               <div className="cell-time">{formatTime(e.created_at)}<span className="rel">{relTime(e.created_at)}</span></div>
               <div className="cell-actor">
-                <div className={`av ${sys ? 'system' : ''}`}>{sys ? 'SYS' : 'SC'}</div>
-                <div className={`name ${sys ? 'system' : ''}`}>{sys ? 'LogLens AI' : 'Sarah Chen'}</div>
+                <div className={`av ${sys ? 'system' : ''}`}>{sys ? 'SYS' : profile.initials}</div>
+                <div className={`name ${sys ? 'system' : ''}`}>{sys ? 'LogLens AI' : profile.name}</div>
               </div>
               <div className="event-code">
                 <span className={`dot ${g.color}`} />

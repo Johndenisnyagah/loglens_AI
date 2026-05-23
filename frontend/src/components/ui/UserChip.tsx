@@ -273,7 +273,9 @@ export function UserChip({
   const [theme,      setTheme]      = useState<Theme>(() => {
     return (localStorage.getItem('loglens-theme') as Theme | null) ?? 'Dark';
   });
-  const [onCall,     setOnCall]     = useState(true);
+  const [onCall,     setOnCall]     = useState(() => {
+    try { return JSON.parse(localStorage.getItem('ll-oncall') ?? 'true'); } catch { return true; }
+  });
   const [newSeen,    setNewSeen]    = useState(false);
   const [addingWs,   setAddingWs]   = useState(false);
   const [newWsName,  setNewWsName]  = useState('');
@@ -500,7 +502,7 @@ export function UserChip({
                         : 'Next rotation starts Monday 09:00'}
                     </small>
                   </div>
-                  <button className="swap" onClick={(e) => { e.stopPropagation(); setOnCall((v) => !v); }}>
+                  <button className="swap" onClick={(e) => { e.stopPropagation(); setOnCall((v) => { const next = !v; try { localStorage.setItem('ll-oncall', JSON.stringify(next)); } catch {} return next; }); }}>
                     Swap
                   </button>
                 </div>
