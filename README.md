@@ -22,7 +22,8 @@ LogLens AI turns raw auth logs into structured security incidents with severity 
 - Transparent risk scoring (0–100) with severity levels (Low / Medium / High / Critical)
 - AI-generated incident summaries via OpenAI GPT-4o-mini (with full mock fallback when no API key is provided)
 - Incident management: mark as Reviewed, False Positive, or Resolved
-- Clean dashboard with summary metrics, recent incidents, and top suspicious IPs
+- Clean dashboard with summary metrics, 24-hour deltas, recent incidents, top suspicious IPs ranked by max risk score, total events analyzed, and last-upload timestamp
+- Dashboard filters by time range (24 h / 7 d / 30 d / all time) and by host (per uploaded log file)
 - Audit log for all key actions
 - AI prompt injection protection (log content is treated as untrusted evidence only)
 
@@ -140,13 +141,23 @@ docker compose up --build
 
 ## Sample Log Usage
 
-A sample authentication log is included at `sample-data/sample_auth.log`. It contains realistic SSH brute-force patterns from multiple IPs and triggers all four detection rules.
+Seven sample authentication logs are included under `sample-data/`, modelling different host profiles:
+
+| File | Profile |
+|------|---------|
+| `sample_auth.log`        | Mixed brute-force, sensitive-username, enumeration, and post-failure-success scenarios. Triggers all four detection rules. |
+| `webserver01_auth.log`   | Public-facing web server activity. |
+| `prod_api_auth.log`      | Production API host. |
+| `dbserver_auth.log`      | Database server. |
+| `mailserver_auth.log`    | Mail server. |
+| `vpn_gateway_auth.log`   | VPN gateway. |
+| `devbox_auth.log`        | Developer workstation. |
 
 1. Start both backend and frontend
 2. Navigate to **Upload Logs**
-3. Drop `sample-data/sample_auth.log` onto the upload zone
+3. Drop any of the files above onto the upload zone (you can upload them one at a time and use the dashboard's host filter to compare)
 4. Click **Analyze Log File**
-5. Expected: ~10 incidents created across 3 source IPs
+5. `sample_auth.log` alone produces ~10 incidents across 3 source IPs
 
 ---
 
@@ -184,7 +195,7 @@ Risk score (0–100) combines: rule base score + failure volume + sensitive user
 | GET | `/api/incidents` | List incidents (filter by severity, status, search) |
 | GET | `/api/incidents/{id}` | Get full incident detail with evidence and AI summary |
 | PATCH | `/api/incidents/{id}/status` | Update incident status |
-| GET | `/api/dashboard/summary` | Dashboard metrics and top IPs |
+| GET | `/api/dashboard/summary` | Dashboard metrics, 24 h deltas, recent incidents, top IPs (with max risk score), total events analyzed, and last-upload timestamp. Filters: `hours`, `log_file_id`. |
 
 ---
 

@@ -53,6 +53,7 @@ export interface SuspiciousIP {
   source_ip: string;
   incident_count: number;
   highest_severity: Severity;
+  risk_score: number;
 }
 
 export interface DashboardSummary {
@@ -63,6 +64,8 @@ export interface DashboardSummary {
   recent_incidents: Incident[];
   top_suspicious_ips: SuspiciousIP[];
   ai_insight: string | null;
+  total_events_analyzed: number;
+  last_analyzed_at: string | null;
   delta_logs: number;
   delta_incidents: number;
   delta_high_risk: number;

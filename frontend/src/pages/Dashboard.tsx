@@ -10,6 +10,7 @@ import { PillFilter } from '../components/ui/PillFilter';
 import { UserChip } from '../components/ui/UserChip';
 import { SeverityBadge } from '../components/ui/SeverityBadge';
 import { ChevronRight } from 'lucide-react';
+import { parseUtc } from '../utils/date';
 
 const TIME_OPTS = ['Last 24 hours', 'Last 7 days', 'Last 30 days', 'All time'];
 const TIME_HOURS: Record<string, number> = {
@@ -101,7 +102,20 @@ const statusLabel: Record<string, string> = {
 };
 
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+  return parseUtc(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', hour12: false });
+}
+
+function relativeFromNow(iso: string | null): string {
+  if (!iso) return 'never analyzed';
+  const diffMs = Date.now() - parseUtc(iso).getTime();
+  const sec = Math.max(0, Math.floor(diffMs / 1000));
+  if (sec < 60)    return 'last analyzed just now';
+  const min = Math.floor(sec / 60);
+  if (min < 60)    return `last analyzed ${min} minute${min === 1 ? '' : 's'} ago`;
+  const hr  = Math.floor(min / 60);
+  if (hr  < 24)    return `last analyzed ${hr} hour${hr === 1 ? '' : 's'} ago`;
+  const day = Math.floor(hr  / 24);
+  return `last analyzed ${day} day${day === 1 ? '' : 's'} ago`;
 }
 
 export function Dashboard() {
@@ -143,7 +157,7 @@ export function Dashboard() {
   if (loading) return <div className="dash-content"><style>{STYLES}</style><div className="dash-bd"><LoadingState message="Loading overview…" /></div></div>;
   if (error || !data) return <div className="dash-content"><style>{STYLES}</style><div className="dash-bd"><ErrorState message={error || 'No data.'} onRetry={() => load()} /></div></div>;
 
-  function fmtDelta(n: number, inverse = false) {
+  function fmtDelta(n: number) {
     if (n === 0) return '';
     const sign = n > 0 ? '+' : '';
     return `${sign}${n} today`;
@@ -154,11 +168,19 @@ export function Dashboard() {
     return (inverse ? !positive : positive) ? 'up' : 'down';
   }
 
+  // Under the 24 h filter, delta == total and bar == 100% by definition, so hide both.
+  const is24h = timeRange === 'Last 24 hours';
+  const isFiltered = timeRange !== 'All time' || hostLabel !== 'All hosts';
+
+  // Bar width = today's share of the metric (delta / total), 0–100%.
+  const todayShare = (delta: number, total: number) =>
+    total > 0 ? Math.min(100, Math.round((delta / total) * 100)) : 0;
+
   const metrics = [
-    { label: 'Logs analyzed',       num: data.total_logs,          delta: fmtDelta(data.delta_logs),         cls: deltaClass(data.delta_logs),         bg: 'rgba(181,186,196,0.5)', width: Math.min(100, data.total_logs * 4) },
-    { label: 'Incidents detected',  num: data.total_incidents,     delta: fmtDelta(data.delta_incidents),    cls: deltaClass(data.delta_incidents),    bg: 'rgba(181,186,196,0.5)', width: Math.min(100, data.total_incidents * 2) },
-    { label: 'High-risk incidents', num: data.high_risk_incidents, delta: fmtDelta(data.delta_high_risk),   cls: deltaClass(data.delta_high_risk, true),  bg: 'rgba(239,91,107,0.65)', width: Math.min(100, data.high_risk_incidents * 6) },
-    { label: 'Needs human review',  num: data.needs_review_count,  delta: fmtDelta(data.delta_needs_review), cls: deltaClass(data.delta_needs_review, true), bg: 'rgba(249,229,71,0.55)', width: Math.min(100, data.needs_review_count * 5) },
+    { label: 'Logs analyzed',       num: data.total_logs,          delta: is24h ? '' : fmtDelta(data.delta_logs),         cls: is24h ? '' : deltaClass(data.delta_logs),               bg: 'rgba(181,186,196,0.5)', width: todayShare(data.delta_logs,         data.total_logs)          },
+    { label: 'Incidents detected',  num: data.total_incidents,     delta: is24h ? '' : fmtDelta(data.delta_incidents),    cls: is24h ? '' : deltaClass(data.delta_incidents),          bg: 'rgba(181,186,196,0.5)', width: todayShare(data.delta_incidents,    data.total_incidents)     },
+    { label: 'High-risk incidents', num: data.high_risk_incidents, delta: is24h ? '' : fmtDelta(data.delta_high_risk),    cls: is24h ? '' : deltaClass(data.delta_high_risk, true),    bg: 'rgba(239,91,107,0.65)', width: todayShare(data.delta_high_risk,    data.high_risk_incidents) },
+    { label: 'Needs human review',  num: data.needs_review_count,  delta: is24h ? '' : fmtDelta(data.delta_needs_review), cls: is24h ? '' : deltaClass(data.delta_needs_review, true), bg: 'rgba(249,229,71,0.55)', width: todayShare(data.delta_needs_review, data.needs_review_count)  },
   ];
 
   const subtitle = `Showing activity across ${hostLabel === 'All hosts' ? 'all monitored hosts' : hostLabel} · ${timeRange.toLowerCase()}.`;
@@ -169,7 +191,7 @@ export function Dashboard() {
 
       <div className="dash-hd">
       <PageHead
-        eyebrow={`${today} · last analyzed just now`}
+        eyebrow={`${today} · ${relativeFromNow(data.last_analyzed_at)}`}
         title="Security overview"
         subtitle={subtitle}
         right={
@@ -204,7 +226,7 @@ export function Dashboard() {
               <div className="num">{m.num}</div>
               {m.delta && <div className={`delta ${m.cls}`}>{m.delta}</div>}
             </div>
-            <div className="bar"><span style={{ width: `${m.width}%`, background: m.bg }} /></div>
+            {!is24h && <div className="bar"><span style={{ width: `${m.width}%`, background: m.bg }} /></div>}
           </div>
         ))}
       </div>
@@ -219,7 +241,9 @@ export function Dashboard() {
           </div>
           {data.recent_incidents.length === 0 ? (
             <div style={{ padding: '40px 0', textAlign: 'center', color: 'var(--color-text-dim)', fontSize: '13px' }}>
-              No incidents yet. Upload a log file to get started.
+              {isFiltered
+                ? 'No incidents match this filter. Try a wider time range or a different host.'
+                : 'No incidents yet. Upload a log file to get started.'}
             </div>
           ) : (
             <table className="tbl">
@@ -282,7 +306,7 @@ export function Dashboard() {
             </a>
             <div className="ai-meta">
               <div className="ai-pulse-wrap"><div className="ai-pulse-dot" /></div>
-              <span>Live · {data.top_suspicious_ips.reduce((s, ip) => s + ip.incident_count, 0)} events analyzed</span>
+              <span>Latest · {data.total_events_analyzed.toLocaleString()} event{data.total_events_analyzed === 1 ? '' : 's'} analyzed</span>
             </div>
           </div>
 
@@ -293,22 +317,21 @@ export function Dashboard() {
               <div className="meta">Top {data.top_suspicious_ips.length} by activity</div>
             </div>
             {data.top_suspicious_ips.length === 0 ? (
-              <div style={{ padding: '20px 0', fontSize: '13px', color: 'var(--color-text-dim)' }}>No suspicious activity detected.</div>
+              <div style={{ padding: '20px 0', fontSize: '13px', color: 'var(--color-text-dim)' }}>
+                {isFiltered ? 'No suspicious IPs in this view.' : 'No suspicious activity detected.'}
+              </div>
             ) : (
               <div className="ips">
-                {data.top_suspicious_ips.map((ip) => {
-                  const pct = Math.min(100, ip.incident_count * 12 + 30);
-                  return (
-                    <div key={ip.source_ip} className="ip-row">
-                      <div>
-                        <div className="ip-name">{ip.source_ip}</div>
-                        <div className="ip-events">{ip.incident_count} incident{ip.incident_count !== 1 ? 's' : ''} · max {sevName(ip.highest_severity)}</div>
-                      </div>
-                      <div className="ip-bar"><span style={{ width: `${pct}%`, background: sevColor(ip.highest_severity) }} /></div>
-                      <div className="ip-risk">{pct}</div>
+                {data.top_suspicious_ips.map((ip) => (
+                  <div key={ip.source_ip} className="ip-row">
+                    <div>
+                      <div className="ip-name">{ip.source_ip}</div>
+                      <div className="ip-events">{ip.incident_count} incident{ip.incident_count !== 1 ? 's' : ''} · max {sevName(ip.highest_severity)}</div>
                     </div>
-                  );
-                })}
+                    <div className="ip-bar"><span style={{ width: `${ip.risk_score}%`, background: sevColor(ip.highest_severity) }} /></div>
+                    <div className="ip-risk">{ip.risk_score}</div>
+                  </div>
+                ))}
               </div>
             )}
           </div>

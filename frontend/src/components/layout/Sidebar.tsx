@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import { getIncidents } from '../../api/incidents';
 import type { Incident } from '../../types';
+import { parseUtc } from '../../utils/date';
 
 const SEEN_KEY = 'loglens-seen-incident-ids';
 
@@ -24,7 +25,7 @@ function sevToNotifType(s: string): Notif['type'] {
 }
 
 function relTime(iso: string): string {
-  const m = Math.floor((Date.now() - new Date(iso).getTime()) / 60000);
+  const m = Math.floor((Date.now() - parseUtc(iso).getTime()) / 60000);
   if (m < 1)  return 'just now';
   if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);

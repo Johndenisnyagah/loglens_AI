@@ -2,6 +2,7 @@ from collections import defaultdict
 from datetime import datetime, timedelta
 
 from fastapi import APIRouter, Depends, Query
+from sqlalchemy import func
 from sqlalchemy.orm import Session
 
 from app import models
@@ -60,11 +61,13 @@ def get_dashboard_summary(
     # Top suspicious IPs — group incidents by source_ip
     all_incidents = inc_q().filter(models.Incident.source_ip.isnot(None)).all()
 
-    ip_data: dict[str, dict] = defaultdict(lambda: {"count": 0, "severities": []})
+    ip_data: dict[str, dict] = defaultdict(lambda: {"count": 0, "severities": [], "max_risk": 0})
     for inc in all_incidents:
         ip = inc.source_ip
         ip_data[ip]["count"] += 1
         ip_data[ip]["severities"].append(inc.severity)
+        if inc.risk_score > ip_data[ip]["max_risk"]:
+            ip_data[ip]["max_risk"] = inc.risk_score
 
     top_ips = sorted(ip_data.items(), key=lambda x: x[1]["count"], reverse=True)[:5]
     suspicious_ips = [
@@ -72,9 +75,18 @@ def get_dashboard_summary(
             source_ip=ip,
             incident_count=data["count"],
             highest_severity=max(data["severities"], key=lambda s: SEVERITY_ORDER.get(s, 0)),
+            risk_score=data["max_risk"],
         )
         for ip, data in top_ips
     ]
+
+    # Total parsed events + last upload time (respects active filter)
+    log_agg = log_q.with_entities(
+        func.coalesce(func.sum(models.LogFile.parsed_events_count), 0),
+        func.max(models.LogFile.uploaded_at),
+    ).one()
+    total_events_analyzed = int(log_agg[0] or 0)
+    last_analyzed_at = log_agg[1]
 
     # AI insight — pull the first AI summary available from recent incidents
     ai_insight: str | None = None
@@ -110,6 +122,8 @@ def get_dashboard_summary(
         recent_incidents=[IncidentResponse.model_validate(i) for i in recent_incidents],
         top_suspicious_ips=suspicious_ips,
         ai_insight=ai_insight,
+        total_events_analyzed=total_events_analyzed,
+        last_analyzed_at=last_analyzed_at,
         delta_logs=delta_logs,
         delta_incidents=delta_incidents,
         delta_high_risk=delta_high_risk,

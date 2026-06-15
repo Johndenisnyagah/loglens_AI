@@ -10,6 +10,7 @@ import { UserChip } from '../components/ui/UserChip';
 import { SeverityBadge } from '../components/ui/SeverityBadge';
 import { StatusBadge } from '../components/ui/StatusBadge';
 import { TrustBanner } from '../components/ui/TrustBanner';
+import { parseUtc } from '../utils/date';
 
 const STYLES = `
 .idd-page { display: flex; flex-direction: column; min-height: 100%; }
@@ -92,7 +93,7 @@ function RiskGauge({ score, severity }: { score: number; severity: string }) {
 }
 
 function formatDate(iso: string) {
-  return new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+  return parseUtc(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 export function IncidentDetail() {

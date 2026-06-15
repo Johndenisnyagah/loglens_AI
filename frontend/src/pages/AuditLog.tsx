@@ -8,6 +8,7 @@ import { PageHead } from '../components/ui/PageHead';
 import { PillFilter } from '../components/ui/PillFilter';
 import { UserChip } from '../components/ui/UserChip';
 import { useProfile } from '../hooks/useProfile';
+import { parseUtc } from '../utils/date';
 
 const STYLES = `
 .audit-page { display: flex; flex-direction: column; min-height: 100%; }
@@ -94,15 +95,15 @@ function matchesAction(action: string, filter: string) {
 
 function withinWindow(iso: string, hours: number) {
   if (hours === 0) return true;
-  return Date.now() - new Date(iso).getTime() <= hours * 3_600_000;
+  return Date.now() - parseUtc(iso).getTime() <= hours * 3_600_000;
 }
 
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
+  return parseUtc(iso).toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit', second: '2-digit', hour12: false });
 }
 
 function relTime(iso: string) {
-  const ms = Date.now() - new Date(iso).getTime();
+  const ms = Date.now() - parseUtc(iso).getTime();
   const s = Math.floor(ms / 1000);
   if (s < 60)        return `${s}s ago`;
   if (s < 3600)      return `${Math.floor(s / 60)} min ago`;
@@ -123,7 +124,7 @@ export function AuditLog() {
     const header = ['id', 'timestamp', 'action', 'target_type', 'target_id', 'details'];
     const rows = filtered.map((e) => [
       e.id,
-      new Date(e.created_at).toISOString(),
+      parseUtc(e.created_at).toISOString(),
       e.action,
       e.target_type ?? '',
       e.target_id ?? '',

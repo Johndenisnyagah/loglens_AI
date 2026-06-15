@@ -8,6 +8,7 @@ import { ErrorState } from '../components/ui/ErrorState';
 import { PageHead } from '../components/ui/PageHead';
 import { PillFilter } from '../components/ui/PillFilter';
 import { UserChip } from '../components/ui/UserChip';
+import { parseUtc } from '../utils/date';
 
 const STYLES = `
 .logs-page { display: flex; flex-direction: column; min-height: 100%; }
@@ -86,7 +87,7 @@ const TIME_HOURS: Record<string, number> = {
 
 function withinWindow(iso: string, hours: number) {
   if (hours === 0) return true;
-  return Date.now() - new Date(iso).getTime() <= hours * 3_600_000;
+  return Date.now() - parseUtc(iso).getTime() <= hours * 3_600_000;
 }
 
 type Phase = 'idle' | 'uploading' | 'done' | 'error';
@@ -105,7 +106,7 @@ function formatBytes(n: number) {
 }
 
 function formatTime(iso: string) {
-  return new Date(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
+  return parseUtc(iso).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' });
 }
 
 export function UploadLogs() {

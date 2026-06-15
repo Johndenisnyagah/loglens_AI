@@ -81,6 +81,7 @@ class SuspiciousIP(BaseModel):
     source_ip: str
     incident_count: int
     highest_severity: str
+    risk_score: int
 
 
 class DashboardSummaryResponse(BaseModel):
@@ -91,6 +92,8 @@ class DashboardSummaryResponse(BaseModel):
     recent_incidents: list[IncidentResponse]
     top_suspicious_ips: list[SuspiciousIP]
     ai_insight: Optional[str]
+    total_events_analyzed: int = 0
+    last_analyzed_at: Optional[datetime] = None
     # "today" deltas — count added in last 24 h regardless of active filter
     delta_logs: int = 0
     delta_incidents: int = 0

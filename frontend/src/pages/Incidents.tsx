@@ -10,6 +10,7 @@ import { PillFilter } from '../components/ui/PillFilter';
 import { UserChip } from '../components/ui/UserChip';
 import { SeverityBadge } from '../components/ui/SeverityBadge';
 import { TrustBanner } from '../components/ui/TrustBanner';
+import { parseUtc } from '../utils/date';
 
 const STYLES = `
 .ai-page { display: flex; flex-direction: column; min-height: 100%; }
@@ -110,12 +111,12 @@ const confPct = (c: string | undefined) => c === 'high' ? 92 : c === 'medium' ? 
 const confColor = (c: string | undefined) => c === 'low' ? 'var(--color-warn)' : 'var(--color-success)';
 
 function relTime(iso: string) {
-  const ms = Date.now() - new Date(iso).getTime();
+  const ms = Date.now() - parseUtc(iso).getTime();
   const m = Math.floor(ms / 60000);
   if (m < 60) return `${Math.max(1, m)} MIN AGO`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h} H AGO`;
-  return new Date(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
+  return parseUtc(iso).toLocaleDateString('en-US', { month: 'short', day: 'numeric' }).toUpperCase();
 }
 
 const RULE_LABELS: Record<string, string> = {
