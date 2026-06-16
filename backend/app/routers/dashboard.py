@@ -1,5 +1,5 @@
 from collections import defaultdict
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 
 from fastapi import APIRouter, Depends, Query
 from sqlalchemy import func
@@ -20,7 +20,7 @@ def get_dashboard_summary(
     hours: int = Query(0, ge=0, description="Time window in hours; 0 = all time"),
     log_file_id: int | None = Query(None, description="Filter to a specific log file (host)"),
 ):
-    cutoff = datetime.utcnow() - timedelta(hours=hours) if hours > 0 else None
+    cutoff = datetime.now(timezone.utc) - timedelta(hours=hours) if hours > 0 else None
 
     def inc_q():
         q = db.query(models.Incident)
@@ -97,7 +97,7 @@ def get_dashboard_summary(
             break
 
     # Deltas — count added in the last 24 h (independent of current filter)
-    day_ago = datetime.utcnow() - timedelta(hours=24)
+    day_ago = datetime.now(timezone.utc) - timedelta(hours=24)
     delta_logs        = db.query(models.LogFile).filter(models.LogFile.uploaded_at >= day_ago).count()
     delta_incidents   = db.query(models.Incident).filter(models.Incident.created_at >= day_ago).count()
     delta_high_risk   = (

@@ -1,4 +1,4 @@
-from datetime import datetime, timedelta
+from datetime import datetime, timedelta, timezone
 from typing import List, Optional
 
 from fastapi import APIRouter, Depends, HTTPException, Query
@@ -24,7 +24,7 @@ def list_incidents(
     query = db.query(models.Incident)
 
     if hours > 0:
-        cutoff = datetime.utcnow() - timedelta(hours=hours)
+        cutoff = datetime.now(timezone.utc) - timedelta(hours=hours)
         query = query.filter(models.Incident.created_at >= cutoff)
     if severity:
         query = query.filter(func.lower(models.Incident.severity) == severity.lower())

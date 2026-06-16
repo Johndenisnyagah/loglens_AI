@@ -4,6 +4,8 @@
 
 LogLens AI is a self-hostable web application that analyzes Linux authentication logs, detects suspicious SSH login behavior, ranks incidents by risk score, and generates plain-language AI summaries with recommended remediation steps.
 
+[![Deploy to Render](https://render.com/images/deploy-to-render-button.svg)](https://render.com/deploy?repo=https://github.com/Johndenisnyagah/loglens_AI)
+
 ---
 
 ## Problem Statement

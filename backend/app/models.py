@@ -1,9 +1,13 @@
-from datetime import datetime
+from datetime import datetime, timezone
 from sqlalchemy import (
     Boolean, Column, DateTime, ForeignKey, Integer, String, Text
 )
 from sqlalchemy.orm import relationship
 from app.database import Base
+
+
+def _utcnow() -> datetime:
+    return datetime.now(timezone.utc)
 
 
 class LogFile(Base):
@@ -12,7 +16,7 @@ class LogFile(Base):
     id = Column(Integer, primary_key=True, index=True)
     filename = Column(String, nullable=False)
     file_type = Column(String, nullable=False)
-    uploaded_at = Column(DateTime, default=datetime.utcnow)
+    uploaded_at = Column(DateTime, default=_utcnow)
     status = Column(String, default="uploaded")  # uploaded|processing|analyzed|failed
     total_lines = Column(Integer, default=0)
     parsed_events_count = Column(Integer, default=0)
@@ -31,7 +35,7 @@ class Event(Base):
     username = Column(String, nullable=True)
     source_ip = Column(String, nullable=True)
     raw_message = Column(Text, nullable=False)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
     log_file = relationship("LogFile", back_populates="events")
     evidence_links = relationship("IncidentEvidence", back_populates="event")
@@ -51,7 +55,7 @@ class Incident(Base):
     description = Column(Text, nullable=False)
     status = Column(String, default="open")  # open|reviewed|false_positive|resolved
     needs_human_review = Column(Boolean, default=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
     log_file = relationship("LogFile", back_populates="incidents")
     evidence = relationship("IncidentEvidence", back_populates="incident", cascade="all, delete-orphan")
@@ -80,7 +84,7 @@ class AISummary(Base):
     recommended_actions = Column(Text, nullable=False)  # JSON array stored as string
     confidence = Column(String, nullable=False)  # low|medium|high
     model_used = Column(String, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
 
     incident = relationship("Incident", back_populates="ai_summary")
 
@@ -93,4 +97,4 @@ class AuditLog(Base):
     target_type = Column(String, nullable=True)
     target_id = Column(Integer, nullable=True)
     details = Column(Text, nullable=True)
-    created_at = Column(DateTime, default=datetime.utcnow)
+    created_at = Column(DateTime, default=_utcnow)
